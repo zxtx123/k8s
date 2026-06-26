@@ -102,3 +102,5 @@ assets/
 
 .coze-logs
 .cozeproj/reduction
+
+.vercel
