@@ -64,6 +64,9 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
   const [tags, setTags] = useState<{ key: string; value: string }[]>([]);
   const [nodeType, setNodeType] = useState<'vm' | 'baremetal'>('vm');
   const [nodeSubnet, setNodeSubnet] = useState('11.51.176.0/22');
+  const [osType, setOsType] = useState<'default' | 'custom'>('default');
+  const [cloudServerProject, setCloudServerProject] = useState('project-container');
+  const [customImage, setCustomImage] = useState('anolis-8.2-anck');
   const [vcpuFilter, setVcpuFilter] = useState('all');
   const [memoryFilter, setMemoryFilter] = useState('all');
   const [category, setCategory] = useState('compute');
@@ -184,6 +187,18 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
     { id: '', label: '请选择' },
   ];
 
+  const cloudServerProjects = [
+    { id: 'project-container', label: '容器云项目' },
+    { id: 'project-development', label: '开发测试项目' },
+    { id: 'project-production', label: '生产环境项目' },
+  ];
+
+  const customImages = [
+    { id: 'anolis-8.2-anck', label: 'AnolisOS-8.2-QU1-x86_64-ANCK-2.5' },
+    { id: 'anolis-8.8-anck', label: 'AnolisOS-8.8-x86_64-ANCK-5.10' },
+    { id: 'rocky-9.3', label: 'Rocky Linux 9.3 x86_64' },
+  ];
+
   const handleAddParam = (type: 'api' | 'controller' | 'scheduler') => {
     const newParam: ParamItem = { name: '', value: '' };
     if (type === 'api') {
@@ -236,7 +251,7 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
   };
 
   return (
-    <div className="min-h-full">
+    <div className="flex h-full min-h-0 flex-col">
       {/* 面包屑导航区域 */}
       <div className="flex items-center justify-between h-14 px-6 text-sm text-gray-600 bg-white border-b border-gray-200">
         <div className="flex items-center gap-2">
@@ -252,7 +267,7 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
       </div>
 
       {/* 内容区域 */}
-      <div className="bg-gray-50 min-h-[calc(100vh-3.5rem)]">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-gray-50">
         {/* 步骤导航 */}
         <div className="relative px-6 py-4 bg-white border-b border-gray-200">
           {/* 返回列表按钮 */}
@@ -1430,12 +1445,70 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
                 
                 {/* 操作系统 */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
                     操作系统
                   </label>
-                  <div className="px-4 py-2 bg-gray-50 text-sm text-gray-700 rounded inline-block">
-                    AnolisOS-8.2-QU1-x86_64-ANCK-2.5
+                  <div className="flex items-center gap-6 mb-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="osType"
+                        value="default"
+                        checked={osType === 'default'}
+                        onChange={() => setOsType('default')}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">默认</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="osType"
+                        value="custom"
+                        checked={osType === 'custom'}
+                        onChange={() => setOsType('custom')}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">自定义</span>
+                    </label>
                   </div>
+
+                  {osType === 'default' ? (
+                    <div className="px-4 py-2 bg-gray-50 text-sm text-gray-700 rounded inline-block">
+                      AnolisOS-8.2-QU1-x86_64-ANCK-2.5
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-w-2xl">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">云服务器项目</label>
+                        <select
+                          value={cloudServerProject}
+                          onChange={(e) => setCloudServerProject(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                        >
+                          {cloudServerProjects.map((project) => (
+                            <option key={project.id} value={project.id}>
+                              {project.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">选择镜像</label>
+                        <select
+                          value={customImage}
+                          onChange={(e) => setCustomImage(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                        >
+                          {customImages.map((image) => (
+                            <option key={image.id} value={image.id}>
+                              {image.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {/* 节点数量 */}
