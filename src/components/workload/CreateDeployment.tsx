@@ -26,6 +26,11 @@ interface ClusterItem {
   selected: boolean;
 }
 
+interface HostAliasItem {
+  ip: string;
+  hostname: string;
+}
+
 export default function CreateDeployment({ mode = 'create', initialData, onBack, onNext, onCancel }: CreateDeploymentProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const isEdit = mode === 'edit';
@@ -55,6 +60,10 @@ export default function CreateDeployment({ mode = 'create', initialData, onBack,
   const [showAdvancedConfig, setShowAdvancedConfig] = useState(false);
   const [moreConfigTab, setMoreConfigTab] = useState('health');
   const [advancedConfigTab, setAdvancedConfigTab] = useState('nodeAffinity');
+  const [hostAliases, setHostAliases] = useState<HostAliasItem[]>([
+    { ip: '10.10.10.100', hostname: 'api.example.com' },
+    { ip: '', hostname: 'test.example.com' },
+  ]);
 
   const [clusters, setClusters] = useState<ClusterItem[]>([
     { name: 'pub-bjpdc', type: 'public', replicas: 1, hostGroup: 'default(默认主机组)', runtime: '', resource: '986C,1972G', selected: true },
@@ -138,6 +147,20 @@ export default function CreateDeployment({ mode = 'create', initialData, onBack,
     setClusters((prev) =>
       prev.map((c, i) => (i === index ? { ...c, runtime } : c))
     );
+  };
+
+  const updateHostAlias = (index: number, field: keyof HostAliasItem, value: string) => {
+    setHostAliases((prev) => prev.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, [field]: value } : item
+    )));
+  };
+
+  const addHostAlias = () => {
+    setHostAliases((prev) => [...prev, { ip: '', hostname: '' }]);
+  };
+
+  const removeHostAlias = (index: number) => {
+    setHostAliases((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
   };
 
   const selectedClusterCount = clusters.filter((c) => c.selected).length;
@@ -734,7 +757,7 @@ export default function CreateDeployment({ mode = 'create', initialData, onBack,
                       { id: 'lifecycle', label: '生命周期', hasIcon: false },
                       { id: 'env', label: '环境变量', hasIcon: true },
                       { id: 'volume', label: '存储挂载', hasIcon: true },
-                      { id: 'security', label: '安全上下文', hasIcon: false },
+                      { id: 'hostAliases', label: 'HostAliases', hasIcon: false },
                     ].map((item) => (
                       <button
                         key={item.id}
@@ -790,9 +813,59 @@ export default function CreateDeployment({ mode = 'create', initialData, onBack,
                         配置存储挂载
                       </div>
                     )}
-                    {moreConfigTab === 'security' && (
-                      <div className="bg-[#F8F9FA] rounded p-6 text-center text-sm text-[#8C9AAE]">
-                        配置安全上下文
+                    {moreConfigTab === 'hostAliases' && (
+                      <div className="bg-[#F8F9FA] rounded p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-[#202020]">HostAliases</h4>
+                            <p className="mt-1 text-xs text-[#8C9AAE]">自定义 Host 映射，一个 IP 地址可以对应多个 Hostname</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={addHostAlias}
+                            className="text-sm text-[#0066FF] hover:text-[#0E4ADB]"
+                          >
+                            + 添加 HostAliases
+                          </button>
+                        </div>
+                        <div className="border border-[#E5E6EB] rounded bg-white overflow-hidden">
+                          <div className="grid grid-cols-[1fr_1fr_64px] gap-3 px-3 py-2 bg-[#F7F8FA] border-b border-[#E5E6EB] text-xs text-[#4E5969]">
+                            <span>IP 地址</span>
+                            <span>Hostname</span>
+                            <span>操作</span>
+                          </div>
+                          {hostAliases.length === 0 ? (
+                            <div className="px-3 py-6 text-center text-sm text-[#8C9AAE]">
+                              暂无 HostAliases，点击右上角添加
+                            </div>
+                          ) : (
+                            hostAliases.map((item, index) => (
+                              <div key={index} className="grid grid-cols-[1fr_1fr_64px] gap-3 items-center px-3 py-2 border-b border-[#F2F3F5] last:border-b-0">
+                                <input
+                                  type="text"
+                                  value={item.ip}
+                                  onChange={(event) => updateHostAlias(index, 'ip', event.target.value)}
+                                  placeholder="如 10.10.10.100"
+                                  className="h-8 w-full px-2 text-sm border border-[#E5E6EB] rounded focus:border-[#165DFF] focus:outline-none"
+                                />
+                                <input
+                                  type="text"
+                                  value={item.hostname}
+                                  onChange={(event) => updateHostAlias(index, 'hostname', event.target.value)}
+                                  placeholder="如 api.example.com"
+                                  className="h-8 w-full px-2 text-sm border border-[#E5E6EB] rounded focus:border-[#165DFF] focus:outline-none"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeHostAlias(index)}
+                                  className="text-sm text-[#F53F3F] hover:text-[#D92D20]"
+                                >
+                                  删除
+                                </button>
+                              </div>
+                            ))
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
