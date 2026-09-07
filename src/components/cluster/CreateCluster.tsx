@@ -13,6 +13,14 @@ interface ParamItem {
   description?: string;
 }
 
+interface DataDiskConfig {
+  type: '高效云盘';
+  size: number;
+  deleteWithInstance: boolean;
+  swapEnabled: boolean;
+  swapSize: string;
+}
+
 export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) {
   const [currentStep, setCurrentStep] = useState(1);
   
@@ -57,7 +65,8 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
   const [selectedSpec, setSelectedSpec] = useState('vc3.xlarge');
   const [systemDiskSize, setSystemDiskSize] = useState(200);
   const [systemDiskType, setSystemDiskType] = useState('高效云盘');
-  const [dataDisks, setDataDisks] = useState<number>(0);
+  const [dataDisk, setDataDisk] = useState<DataDiskConfig | null>(null);
+  const [swapSizeError, setSwapSizeError] = useState('');
   const [nodeCount, setNodeCount] = useState(2);
   const [hostnameType, setHostnameType] = useState<'random' | 'custom'>('random');
   const [customHostnamePrefix, setCustomHostnamePrefix] = useState('');
@@ -236,7 +245,78 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
     updateFn(newParams);
   };
 
+  const validateSwapSize = (disk: DataDiskConfig) => {
+    if (!disk.swapEnabled) return '';
+
+    const maxSwapSize = Math.floor(disk.size / 3);
+    const swapSize = Number(disk.swapSize);
+
+    if (maxSwapSize < 1) {
+      return '当前数据盘容量不足以开启 SWAP';
+    }
+
+    if (!disk.swapSize || !Number.isInteger(swapSize) || swapSize < 1 || swapSize > maxSwapSize) {
+      return `SWAP 大小需为 1-${maxSwapSize} GB，且不得超过数据盘容量的 1/3`;
+    }
+
+    return '';
+  };
+
+  const handleDataDiskSizeChange = (size: number) => {
+    setDataDisk((current) => {
+      if (!current) return current;
+
+      const next = { ...current, size };
+      setSwapSizeError(validateSwapSize(next));
+      return next;
+    });
+  };
+
+  const handleSwapEnabledChange = (swapEnabled: boolean) => {
+    setDataDisk((current) => {
+      if (!current) return current;
+
+      const next = { ...current, swapEnabled };
+      setSwapSizeError(validateSwapSize(next));
+      return next;
+    });
+  };
+
+  const handleSwapSizeChange = (swapSize: string) => {
+    setDataDisk((current) => {
+      if (!current) return current;
+
+      const next = { ...current, swapSize };
+      setSwapSizeError(validateSwapSize(next));
+      return next;
+    });
+  };
+
+  const handleAddDataDisk = () => {
+    if (dataDisk) return;
+
+    setDataDisk({
+      type: '高效云盘',
+      size: 200,
+      deleteWithInstance: true,
+      swapEnabled: false,
+      swapSize: '',
+    });
+  };
+
+  const handleRemoveDataDisk = () => {
+    setDataDisk(null);
+    setSwapSizeError('');
+  };
+
   const handleNext = () => {
+    if (currentStep === 3 && dataDisk) {
+      const error = validateSwapSize(dataDisk);
+      setSwapSizeError(error);
+
+      if (error) return;
+    }
+
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -1399,55 +1479,161 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
                 <h3 className="text-base font-medium text-gray-900 mb-4">存储配置</h3>
                 
                 {/* 系统盘 */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                  <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">
                     <span className="text-red-500">*</span>系统盘
                   </label>
-                  <div className="flex items-center gap-4">
-                    <select
-                      value={systemDiskType}
-                      onChange={(e) => setSystemDiskType(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
-                    >
-                      <option value="高效云盘">高效云盘</option>
-                    </select>
-                    <input
-                      type="number"
-                      value={systemDiskSize}
-                      onChange={(e) => setSystemDiskSize(Number(e.target.value))}
-                      className="w-24 px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-500">GB</span>
-                    <span className="text-sm text-gray-500">（2800 IOPS）</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <select
+                        value={systemDiskType}
+                        onChange={(e) => setSystemDiskType(e.target.value)}
+                        className="px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                      >
+                        <option value="高效云盘">高效云盘</option>
+                      </select>
+                      <input
+                        type="number"
+                        value={systemDiskSize}
+                        onChange={(e) => setSystemDiskSize(Number(e.target.value))}
+                        className="w-24 px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-500">GB</span>
+                      <span className="text-sm text-gray-500">（2800 IOPS）</span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">用于存储节点的操作系统数据</p>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">用于存储节点的操作系统数据</p>
                 </div>
                 
                 {/* 数据盘 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                  <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">
                     数据盘
                   </label>
-                  <div className="text-sm text-gray-500">
-                    已添加 {dataDisks} 个数据盘，还可以添加 {1 - dataDisks} 个
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-gray-500">
+                    已添加 {dataDisk ? 1 : 0} 个数据盘，还可以添加 {dataDisk ? 0 : 1} 个
                   </div>
-                  {dataDisks === 0 && (
-                    <button className="mt-2 text-sm text-blue-600 hover:text-blue-700">
+                  {dataDisk ? (
+                    <div className="mt-3 space-y-3">
+                      <div className="flex flex-wrap items-center gap-4">
+                      <select
+                        value={dataDisk.type}
+                        onChange={(e) => setDataDisk((current) => current ? {
+                          ...current,
+                          type: e.target.value as DataDiskConfig['type'],
+                        } : current)}
+                        className="px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                      >
+                        <option value="高效云盘">高效云盘</option>
+                      </select>
+                      <input
+                        type="number"
+                        value={dataDisk.size}
+                        onChange={(e) => handleDataDiskSizeChange(Number(e.target.value))}
+                        className="w-24 px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-500">GB</span>
+                      <span className="text-sm text-gray-500">（2800 IOPS）</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="delete-data-disk-with-instance"
+                          type="checkbox"
+                          checked={dataDisk.deleteWithInstance}
+                          onChange={(e) => setDataDisk((current) => current ? {
+                            ...current,
+                            deleteWithInstance: e.target.checked,
+                          } : current)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <label htmlFor="delete-data-disk-with-instance" className="text-sm text-gray-700">
+                          随实例释放
+                        </label>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveDataDisk}
+                        className="text-sm text-red-600 hover:text-red-700"
+                      >
+                        删除
+                      </button>
+                      </div>
+                  </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleAddDataDisk}
+                      className="mt-2 text-sm text-blue-600 hover:text-blue-700"
+                    >
                       + 添加数据盘
                     </button>
                   )}
+                  </div>
+                </div>
+
+                {/* 开启 SWAP */}
+                <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                  <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">
+                    开启 SWAP
+                  </label>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label className={`flex items-center gap-2 ${dataDisk ? 'cursor-pointer' : 'cursor-not-allowed text-gray-400'}`}>
+                        <input
+                          type="checkbox"
+                          checked={dataDisk?.swapEnabled ?? false}
+                          disabled={!dataDisk}
+                          onChange={(e) => handleSwapEnabledChange(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
+                        />
+                        <span className="text-sm">开启</span>
+                      </label>
+                      {dataDisk?.swapEnabled && (
+                        <>
+                          <input
+                            type="number"
+                            min={1}
+                            max={Math.floor(dataDisk.size / 3)}
+                            step={1}
+                            value={dataDisk.swapSize}
+                            onChange={(e) => handleSwapSizeChange(e.target.value)}
+                            aria-invalid={Boolean(swapSizeError)}
+                            aria-describedby={swapSizeError ? 'swap-size-error' : undefined}
+                            className={`w-24 px-4 py-2 border rounded text-sm focus:outline-none focus:ring-1 ${swapSizeError
+                              ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                              : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                            }`}
+                          />
+                          <span className="text-sm text-gray-500">GB</span>
+                          <span className="text-xs text-gray-500">
+                            最大 {Math.floor(dataDisk.size / 3)} GB（数据盘容量的 1/3）
+                          </span>
+                        </>
+                      )}
+                      {!dataDisk && (
+                        <span className="text-xs text-gray-400">请先添加数据盘后配置 SWAP</span>
+                      )}
+                    </div>
+                    {dataDisk?.swapEnabled && swapSizeError && (
+                      <p id="swap-size-error" className="mt-1 text-xs text-red-600">
+                        {swapSizeError}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* 系统与节点基础配置 */}
               <div className="mb-8 pb-6 border-b border-gray-200">
                 <h3 className="text-base font-medium text-gray-900 mb-4">系统与节点基础配置</h3>
-                
+
+                <div className="space-y-6">
                 {/* 操作系统 */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                  <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">
                     操作系统
                   </label>
+                  <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-6 mb-3">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -1509,14 +1695,15 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
-                
+
                 {/* 节点数量 */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                  <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">
                     节点数量
                   </label>
-                  <div className="flex items-center gap-4">
+                  <div className="min-w-0 flex flex-1 flex-wrap items-center gap-4">
                     <input
                       type="number"
                       value={nodeCount}
@@ -1529,11 +1716,12 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
                 </div>
                 
                 {/* 主机名称 */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                  <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">
                     主机名称
                   </label>
-                  <div className="space-y-3">
+                  <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="radio"
@@ -1557,13 +1745,15 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
                       <span className="text-sm text-gray-700">自定义主机名</span>
                     </label>
                   </div>
+                  </div>
                 </div>
-                
+
                 {/* 标签 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                  <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">
                     标签
                   </label>
+                  <div className="min-w-0 flex-1">
                   {tags.length === 0 ? (
                     <button className="text-sm text-blue-600 hover:text-blue-700">
                       + 添加
@@ -1593,6 +1783,8 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
                     </div>
                   )}
                   <p className="mt-1 text-xs text-gray-500">用于资源分类、检索</p>
+                  </div>
+                </div>
                 </div>
               </div>
 

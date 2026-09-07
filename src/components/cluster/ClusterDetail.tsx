@@ -57,10 +57,10 @@ export default function ClusterDetail({ clusterName, onBack }: ClusterDetailProp
   };
 
   return (
-    <div className="min-h-full">
+    <div className="flex h-full min-h-0 flex-col">
       {/* 面包屑导航区域 */}
-      <div className="flex items-center justify-between h-14 px-6 text-sm text-gray-600 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-2">
+      <div className="flex h-14 shrink-0 items-center justify-between gap-4 px-4 text-sm text-gray-600 bg-white border-b border-gray-200 sm:px-6">
+        <div className="min-w-0 truncate whitespace-nowrap flex items-center gap-2">
           <span>产品团队-专用</span>
           <span className="text-gray-400">{'>'}</span>
           <span>stark测试</span>
@@ -69,17 +69,17 @@ export default function ClusterDetail({ clusterName, onBack }: ClusterDetailProp
           <span className="text-gray-400">{'>'}</span>
           <span className="text-gray-900 font-medium">集群详情</span>
         </div>
-        <a href="#" className="text-blue-600 hover:underline">
+        <a href="#" className="shrink-0 text-blue-600 hover:underline">
           CIS帮助文档
         </a>
       </div>
 
       {/* 内容区域 */}
-      <div className="bg-gray-50 min-h-[calc(100vh-3.5rem)]">
+      <div className="flex min-h-0 flex-1 flex-col bg-gray-50">
         {/* 标签页导航 */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="px-6">
-            <div className="flex items-center gap-1">
+        <div className="shrink-0 bg-white border-b border-gray-200">
+          <div className="overflow-x-auto">
+            <div className="flex min-w-max items-center gap-1 px-4 sm:px-6">
               <button
                 onClick={onBack}
                 className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
@@ -93,7 +93,7 @@ export default function ClusterDetail({ clusterName, onBack }: ClusterDetailProp
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  className={`shrink-0 whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === tab.id
                       ? 'border-blue-600 text-blue-600'
                       : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -107,13 +107,13 @@ export default function ClusterDetail({ clusterName, onBack }: ClusterDetailProp
         </div>
 
         {/* 标签页内容 */}
-        <div className="p-6">
+        <div className="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
           {activeTab === 'basic' && (
             <div className="space-y-6">
               {/* 集群基础信息 */}
               <div className="bg-white rounded border border-gray-200 p-6">
                 <h2 className="text-lg font-medium text-gray-900 mb-6">集群基础信息</h2>
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 xl:gap-6">
                   <div className="space-y-4">
                     <div className="flex">
                       <span className="w-28 text-sm text-gray-500 flex-shrink-0">集群名称:</span>

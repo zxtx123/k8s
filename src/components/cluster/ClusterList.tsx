@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 interface Cluster {
   id: number;
   name: string;
@@ -41,6 +43,16 @@ export default function ClusterList({
   onCreateCluster,
   onViewDetail,
 }: ClusterListProps) {
+  const [oversellCluster, setOversellCluster] = useState<Cluster | null>(null);
+  const [oversellFactor, setOversellFactor] = useState('3');
+  const [oversellFactors, setOversellFactors] = useState<Record<number, string>>({});
+  const [oversellError, setOversellError] = useState('');
+  const [moreMenu, setMoreMenu] = useState<{
+    cluster: Cluster;
+    top: number;
+    right: number;
+  } | null>(null);
+
   const clusters: Cluster[] = [
     {
       id: 1447,
@@ -207,8 +219,45 @@ export default function ClusterList({
   const endIndex = startIndex + itemsPerPage;
   const displayedClusters = filteredClusters.slice(startIndex, endIndex);
 
+  useEffect(() => {
+    const closeMoreMenu = () => setMoreMenu(null);
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMoreMenu(null);
+    };
+
+    window.addEventListener('click', closeMoreMenu);
+    window.addEventListener('keydown', closeOnEscape);
+    window.addEventListener('resize', closeMoreMenu);
+    window.addEventListener('scroll', closeMoreMenu, true);
+    return () => {
+      window.removeEventListener('click', closeMoreMenu);
+      window.removeEventListener('keydown', closeOnEscape);
+      window.removeEventListener('resize', closeMoreMenu);
+      window.removeEventListener('scroll', closeMoreMenu, true);
+    };
+  }, []);
+
+  const openOversellConfig = (cluster: Cluster) => {
+    setOversellCluster(cluster);
+    setOversellFactor(oversellFactors[cluster.id] ?? '3');
+    setOversellError('');
+  };
+
+  const saveOversellConfig = () => {
+    const factor = Number(oversellFactor);
+    if (!Number.isFinite(factor) || factor <= 0) {
+      setOversellError('请输入大于 0 的超卖倍数');
+      return;
+    }
+
+    if (oversellCluster) {
+      setOversellFactors((prev) => ({ ...prev, [oversellCluster.id]: oversellFactor }));
+    }
+    setOversellCluster(null);
+  };
+
   return (
-    <div className="min-h-full">
+    <div className="flex h-full min-h-0 flex-col">
       {/* 面包屑导航区域 */}
       <div className="flex items-center justify-between h-14 px-6 text-sm text-gray-600 bg-white border-b border-gray-200">
         <div className="flex items-center gap-2">
@@ -224,9 +273,9 @@ export default function ClusterList({
       </div>
 
       {/* 内容区域 */}
-      <div className="bg-gray-50 min-h-[calc(100vh-3.5rem)]">
+      <div className="min-h-0 flex-1 overflow-auto bg-gray-50">
         {/* 操作栏 */}
-        <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+        <div className="flex flex-col gap-3 px-4 py-4 bg-white border-b border-gray-200 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           {/* 左侧：创建集群按钮 */}
           <button 
             onClick={onCreateCluster}
@@ -239,7 +288,7 @@ export default function ClusterList({
           </button>
 
           {/* 右侧：筛选和搜索 */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {/* 可用区下拉框 */}
             <select className="px-3 py-2 text-sm border border-gray-300 rounded bg-white text-gray-700">
               <option>可用区</option>
@@ -254,7 +303,7 @@ export default function ClusterList({
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="ID/名称"
-                className="w-48 px-4 py-2 pl-4 pr-10 bg-gray-100 border border-transparent rounded text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                className="w-full min-w-0 px-4 py-2 pl-4 pr-10 bg-gray-100 border border-transparent rounded text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors sm:w-48"
               />
               <svg className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -271,8 +320,9 @@ export default function ClusterList({
         </div>
 
         {/* 表格 */}
-        <div className="border border-gray-200 rounded overflow-hidden bg-white">
-          <table className="w-full">
+        <div className="border border-gray-200 rounded bg-white">
+          <div className="overflow-x-auto">
+          <table className="min-w-[1200px] w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr className="text-sm text-gray-700 font-semibold">
                 <th className="px-4 py-3 text-left">ID</th>
@@ -342,7 +392,7 @@ export default function ClusterList({
                     {cluster.readyNodes} / {cluster.totalNodes}
                   </td>
                   <td className="px-4 py-3 text-gray-600">{cluster.createTime}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <button className="text-gray-600 hover:text-blue-600 text-sm">
                         编辑
@@ -355,7 +405,26 @@ export default function ClusterList({
                       <button className="text-gray-600 hover:text-blue-600 text-sm">
                         集群监控
                       </button>
-                      <button className="text-gray-400 hover:text-gray-600 p-1">
+                      <button
+                        type="button"
+                        aria-label={`${cluster.name} 更多操作`}
+                        aria-expanded={moreMenu?.cluster.id === cluster.id}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (moreMenu?.cluster.id === cluster.id) {
+                            setMoreMenu(null);
+                            return;
+                          }
+
+                          const rect = event.currentTarget.getBoundingClientRect();
+                          setMoreMenu({
+                            cluster,
+                            top: rect.bottom + 4,
+                            right: Math.max(8, window.innerWidth - rect.right),
+                          });
+                        }}
+                        className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
+                      >
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                         </svg>
@@ -366,14 +435,15 @@ export default function ClusterList({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* 分页栏 */}
-        <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200">
+        <div className="flex flex-col gap-3 px-4 py-4 bg-white border-t border-gray-200 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="text-sm text-gray-600">
             共 {totalItems} 条记录 第 {currentPage} / {totalPages} 页
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
@@ -411,7 +481,7 @@ export default function ClusterList({
               </svg>
             </button>
 
-            <div className="ml-4 flex items-center gap-2">
+            <div className="flex items-center gap-2 sm:ml-4">
               <select className="px-2 py-1 text-sm border border-gray-300 rounded bg-white">
                 <option>50条/页</option>
                 <option>20条/页</option>
@@ -421,6 +491,87 @@ export default function ClusterList({
           </div>
         </div>
       </div>
+
+      {moreMenu && (
+        <div
+          className="fixed z-[60] min-w-28 rounded border border-gray-200 bg-white py-1 shadow-lg"
+          style={{ top: moreMenu.top, right: moreMenu.right }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              const cluster = moreMenu.cluster;
+              setMoreMenu(null);
+              openOversellConfig(cluster);
+            }}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+          >
+            超卖配置
+          </button>
+        </div>
+      )}
+
+      {oversellCluster && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="oversell-dialog-title" className="w-full max-w-md rounded-lg bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+              <div>
+                <h2 id="oversell-dialog-title" className="text-base font-medium text-gray-900">超卖配置</h2>
+                <p className="mt-1 text-sm text-gray-500">集群：{oversellCluster.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOversellCluster(null)}
+                aria-label="关闭超卖配置"
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="px-5 py-5">
+              <label htmlFor="oversell-factor" className="mb-2 block text-sm font-medium text-gray-700">
+                集群超卖倍数
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="oversell-factor"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={oversellFactor}
+                  onChange={(event) => {
+                    setOversellFactor(event.target.value);
+                    setOversellError('');
+                  }}
+                  placeholder="请输入超卖倍数"
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <span className="shrink-0 text-sm text-gray-600">倍</span>
+              </div>
+              {oversellError && <p className="mt-2 text-sm text-red-600">{oversellError}</p>}
+            </div>
+            <div className="flex justify-end gap-3 border-t border-gray-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setOversellCluster(null)}
+                className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={saveOversellConfig}
+                className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+              >
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
