@@ -920,7 +920,7 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
               </button>
             </div>
             <div className="px-5 py-5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
                 <label htmlFor="group-swap-enabled" className="text-sm font-medium text-gray-700">
                   开启SWAP
                 </label>
@@ -933,14 +933,25 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
                     setSwapEnabled((prev) => !prev);
                     setSwapError('');
                   }}
-                  className={`relative h-6 w-12 rounded-full transition-colors ${swapEnabled ? 'bg-blue-600' : 'bg-gray-300'}`}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
+                    swapEnabled
+                      ? 'bg-blue-600 shadow-inner'
+                      : 'bg-gray-300 hover:bg-gray-400'
+                  }`}
                 >
                   <span
-                    className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                      swapEnabled ? 'translate-x-7' : 'translate-x-1'
+                    className={`absolute h-5 w-5 rounded-full bg-white shadow-md ring-1 ring-black/5 transition-all duration-200 ${
+                      swapEnabled ? 'left-[22px]' : 'left-0.5'
                     }`}
                   />
                 </button>
+                <span
+                  className={`text-sm transition-colors ${
+                    swapEnabled ? 'text-blue-600' : 'text-gray-500'
+                  }`}
+                >
+                  {swapEnabled ? '已开启' : '未开启'}
+                </span>
               </div>
               {swapEnabled && (
                 <div className="mt-4">
