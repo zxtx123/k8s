@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import NodeGroupNodeForm from './NodeGroupNodeForm';
+
 interface NodeListProps {
   clusterName: string;
   filterNodeGroup?: string;
@@ -121,6 +123,11 @@ export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGrou
     top: number;
     right: number;
   } | null>(null);
+
+  // 添加节点页面
+  const [view, setView] = useState<'list' | 'addNode'>('list');
+  const [addNodeSelectedGroup, setAddNodeSelectedGroup] = useState('');
+  const [addGroupSelectError, setAddGroupSelectError] = useState('');
 
   // 资源监控数据
   const resourceMetrics = {
@@ -271,6 +278,53 @@ export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGrou
     setIsBatchOversellDialogOpen(false);
   };
 
+  const openAddNodePage = () => {
+    setAddNodeSelectedGroup('');
+    setAddGroupSelectError('');
+    setView('addNode');
+  };
+
+  const handleAddNodeSubmit = () => {
+    if (!addNodeSelectedGroup) {
+      setAddGroupSelectError('请先选择节点组');
+      return;
+    }
+    setView('list');
+  };
+
+  if (view === 'addNode') {
+    return (
+      <div className="min-w-0 space-y-6">
+        <div className="rounded-lg border border-gray-200 bg-white p-6">
+          <button
+            type="button"
+            onClick={() => setView('list')}
+            className="text-sm text-blue-600 hover:text-blue-700"
+          >
+            ← 返回节点列表
+          </button>
+          <h2 className="mb-6 mt-4 text-lg font-bold text-gray-900">添加节点</h2>
+
+          <div className="max-w-6xl space-y-8">
+            <NodeGroupNodeForm
+              showGroupSelect
+              showSwapField={false}
+              nodeGroupOptions={nodeGroupOptions}
+              selectedNodeGroup={addNodeSelectedGroup}
+              groupSelectError={addGroupSelectError}
+              onNodeGroupChange={(name) => {
+                setAddNodeSelectedGroup(name);
+                setAddGroupSelectError('');
+              }}
+              onSubmit={handleAddNodeSubmit}
+              onCancel={() => setView('list')}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-w-0 space-y-6">
       {/* 资源监控仪表盘 */}
@@ -334,7 +388,11 @@ export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGrou
       {/* 操作按钮组和搜索框 */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm">
+          <button
+            type="button"
+            onClick={openAddNodePage}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
+          >
             添加节点
           </button>
           <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm">
