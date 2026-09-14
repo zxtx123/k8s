@@ -22,6 +22,9 @@ interface NodeGroup {
   creator: string;
   createTime: string;
   dataDiskSize: number;
+  oversellRatio?: string;
+  swapStatus?: boolean;
+  swapSize?: string;
 }
 
 interface GroupSwapConfig {
@@ -73,8 +76,8 @@ const existingCloudProjects = [
 ];
 
 const initialGroups: NodeGroup[] = [
-  { id: 1, name: '通用计算组', nodeCount: 3, creator: 'zhangxing5', createTime: '2026-08-12 14:30:00', dataDiskSize: 200 },
-  { id: 2, name: '大数据内存组', nodeCount: 2, creator: 'jidongdong', createTime: '2026-08-20 09:15:00', dataDiskSize: 200 },
+  { id: 1, name: '通用计算组', nodeCount: 3, creator: 'zhangxing5', createTime: '2026-08-12 14:30:00', dataDiskSize: 200, oversellRatio: '3', swapStatus: false },
+  { id: 2, name: '大数据内存组', nodeCount: 2, creator: 'jidongdong', createTime: '2026-08-20 09:15:00', dataDiskSize: 200, oversellRatio: '3', swapStatus: false },
 ];
 
 function validateSwapSize(disk: DataDiskConfig) {
@@ -90,6 +93,7 @@ function validateSwapSize(disk: DataDiskConfig) {
 
 export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGroupTabProps) {
   const [view, setView] = useState<'list' | 'create'>('list');
+  const [addNodeGroup, setAddNodeGroup] = useState<NodeGroup | null>(null);
   const [groups, setGroups] = useState<NodeGroup[]>(initialGroups);
   const [searchTerm, setSearchTerm] = useState('');
   const [swapConfigs, setSwapConfigs] = useState<Record<number, GroupSwapConfig>>({});
@@ -178,6 +182,9 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
     }
     if (oversellGroup) {
       setOversellFactors((prev) => ({ ...prev, [oversellGroup.id]: oversellFactor }));
+      setGroups((prev) => prev.map((g) =>
+        g.id === oversellGroup.id ? { ...g, oversellRatio: oversellFactor } : g
+      ));
     }
     setOversellGroup(null);
   };
@@ -187,6 +194,13 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
     const current = swapConfigs[group.id];
     setSwapEnabled(current?.enabled ?? false);
     setSwapSize(current?.size ?? '');
+    setSwapError('');
+  };
+
+  const openSwapFromList = (group: NodeGroup) => {
+    setSwapGroup(group);
+    setSwapEnabled(true);
+    setSwapSize('');
     setSwapError('');
   };
 
@@ -205,6 +219,16 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
       }
     }
     setSwapConfigs((prev) => ({ ...prev, [swapGroup.id]: { enabled: swapEnabled, size: swapSize } }));
+    setGroups((prev) => prev.map((g) =>
+      g.id === swapGroup.id
+        ? {
+            ...g,
+            swapStatus: swapEnabled,
+            swapSize: swapEnabled ? swapSize : undefined,
+            oversellRatio: oversellFactors[g.id] ?? g.oversellRatio,
+          }
+        : g
+    ));
     setSwapGroup(null);
   };
 
@@ -217,6 +241,15 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
 
   const openGroupNodes = (group: NodeGroup) => {
     onViewGroupNodes?.(group.name);
+  };
+
+  const openAddNode = (group: NodeGroup) => {
+    setAddNodeGroup(group);
+    setView('create');
+  };
+
+  const closeAddNode = () => {
+    setAddNodeGroup(null);
   };
 
   const handleDataDiskSizeChange = (size: number) => {
@@ -254,7 +287,7 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
     setView('list');
   };
 
-  if (view === 'create') {
+  if ((view === 'create' && !addNodeGroup) || (view === 'create' && addNodeGroup)) {
     return (
       <div className="min-w-0 space-y-6">
         <div className="rounded-lg border border-gray-200 bg-white p-6">
@@ -268,10 +301,12 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
           >
             ← 返回节点组列表
           </button>
-          <h2 className="mb-6 mt-4 text-lg font-bold text-gray-900">创建节点组</h2>
+          <h2 className="mb-6 mt-4 text-lg font-bold text-gray-900">
+            {addNodeGroup ? `添加节点 - ${addNodeGroup.name}` : '创建节点组'}
+          </h2>
 
           <div className="max-w-6xl space-y-8">
-            {/* 基本信息 */}
+            {!addNodeGroup && (
             <div className="border-b border-gray-200 pb-6">
               <h3 className="mb-4 text-base font-medium text-gray-900">基本信息</h3>
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
@@ -298,6 +333,7 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
                 </div>
               </div>
             </div>
+            )}
 
             {/* 节点配置 */}
             <div className="space-y-6">
@@ -556,6 +592,7 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
                   </div>
                 </div>
 
+                {!addNodeGroup && (
                 <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
                   <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">开启 SWAP</label>
                   <div className="min-w-0 flex-1">
@@ -610,6 +647,7 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
                     )}
                   </div>
                 </div>
+                )}
               </div>
 
               {/* 系统与节点基础配置 */}
@@ -948,7 +986,11 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
               <button
                 type="button"
                 onClick={() => {
-                  resetCreateForm();
+                  if (addNodeGroup) {
+                    closeAddNode();
+                  } else {
+                    resetCreateForm();
+                  }
                   setView('list');
                 }}
                 className="rounded border border-gray-300 px-6 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
@@ -1004,6 +1046,8 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
             <tr>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">节点组名称</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">节点数量</th>
+              <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">超卖比</th>
+              <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">SWAP</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">创建人</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">创建时间</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">操作</th>
@@ -1022,10 +1066,36 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
                   </button>
                 </td>
                 <td className="px-4 py-3 text-gray-700">{group.nodeCount}</td>
+                <td className="px-4 py-3 text-gray-700">{group.oversellRatio ?? '-'} 倍</td>
+                <td className="px-4 py-3">
+                  {group.swapStatus ? (
+                    <span className="inline-flex rounded bg-green-50 px-2 py-0.5 text-xs text-green-700">
+                      {group.swapSize ? `${group.swapSize} GB` : '已开启'}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={false}
+                      aria-label={`为${group.name}开启SWAP`}
+                      onClick={() => openSwapFromList(group)}
+                      className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-gray-300 transition-colors duration-200 hover:bg-gray-400"
+                    >
+                      <span className="absolute left-0.5 h-5 w-5 rounded-full bg-white shadow-md ring-1 ring-black/5 transition-all duration-200" />
+                    </button>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-gray-700">{group.creator}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-gray-700">{group.createTime}</td>
                 <td className="whitespace-nowrap px-4 py-3">
                   <div className="flex items-center gap-2 whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={() => openAddNode(group)}
+                      className="text-sm text-blue-600 hover:text-blue-700"
+                    >
+                      添加节点
+                    </button>
                     <button
                       type="button"
                       onClick={() => openOversellConfig(group)}
@@ -1053,7 +1123,7 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
             ))}
             {filteredGroups.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-sm text-gray-500">
+                <td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-500">
                   {searchTerm ? '未找到匹配的节点组' : '暂无节点组'}
                 </td>
               </tr>
