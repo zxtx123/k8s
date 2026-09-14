@@ -72,6 +72,7 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
   const [customHostnamePrefix, setCustomHostnamePrefix] = useState('');
   const [tags, setTags] = useState<{ key: string; value: string }[]>([]);
   const [nodeType, setNodeType] = useState<'vm' | 'baremetal'>('vm');
+  const [newNodeZone, setNewNodeZone] = useState('bjzdt');
   const [nodeSubnet, setNodeSubnet] = useState('11.51.176.0/22');
   const [osType, setOsType] = useState<'default' | 'custom'>('default');
   const [cloudServerProject, setCloudServerProject] = useState('project-container');
@@ -1242,6 +1243,35 @@ export default function CreateCluster({ onCancel, onNext }: CreateClusterProps) 
                       >
                         裸金属
                       </button>
+                    </div>
+                  </div>
+
+                  {/* 可用区 */}
+                  <div className="flex items-start gap-4">
+                    <div className="w-28 pt-1 text-right text-sm font-medium text-gray-700">
+                      <span className="text-red-500">*</span>可用区
+                    </div>
+                    <div className="flex-1 flex flex-wrap items-center gap-x-6 gap-y-3">
+                      {[
+                        { id: 'bjcm', label: 'bjcm(北京移动)' },
+                        { id: 'bjmd', label: 'bjmd(北京联通)' },
+                        { id: 'bjzdt', label: 'bjzdt(北京电信25G)' },
+                        { id: 'bjpdc', label: 'bjpdc(北京联通25G)' },
+                        { id: 'bjwdt', label: 'bjwdt(北京电信25G-特价)' },
+                        { id: 'aicn', label: 'aicn(北京阿里云)' },
+                      ].map((zone) => (
+                        <label key={zone.id} className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
+                          <input
+                            type="radio"
+                            name="cc-new-zone"
+                            value={zone.id}
+                            checked={newNodeZone === zone.id}
+                            onChange={() => setNewNodeZone(zone.id)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{zone.label}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
 

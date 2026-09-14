@@ -64,6 +64,15 @@ const existingCloudProjects = [
   { id: 'project-1234', label: '1234(产品团队-专用)' },
 ];
 
+const newNodeZones = [
+  { id: 'bjcm', label: 'bjcm(北京移动)' },
+  { id: 'bjmd', label: 'bjmd(北京联通)' },
+  { id: 'bjzdt', label: 'bjzdt(北京电信25G)' },
+  { id: 'bjpdc', label: 'bjpdc(北京联通25G)' },
+  { id: 'bjwdt', label: 'bjwdt(北京电信25G-特价)' },
+  { id: 'aicn', label: 'aicn(北京阿里云)' },
+];
+
 function validateSwapSize(disk: DataDiskConfig) {
   if (!disk.swapEnabled) return '';
   const maxSwapSize = Math.floor(disk.size / 3);
@@ -87,6 +96,7 @@ export default function NodeGroupNodeForm({
 }: NodeGroupNodeFormProps) {
   const [nodeCreateType, setNodeCreateType] = useState<'create' | 'existing'>('create');
   const [nodeType, setNodeType] = useState<'vm' | 'baremetal'>('vm');
+  const [newNodeZone, setNewNodeZone] = useState('bjzdt');
   const [existingZone, setExistingZone] = useState('bjzdt');
   const [existingProject, setExistingProject] = useState('project-1234');
   const [existingNodeType, setExistingNodeType] = useState('vm');
@@ -208,6 +218,28 @@ export default function NodeGroupNodeForm({
                   >
                     裸金属
                   </button>
+                </div>
+              </div>
+
+              {/* 可用区 */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">
+                  <span className="text-red-500">*</span>可用区
+                </label>
+                <div className="flex flex-1 flex-wrap gap-x-6 gap-y-3">
+                  {newNodeZones.map((zone) => (
+                    <label key={zone.id} className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
+                      <input
+                        type="radio"
+                        name="ng-new-zone"
+                        value={zone.id}
+                        checked={newNodeZone === zone.id}
+                        onChange={() => setNewNodeZone(zone.id)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{zone.label}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
