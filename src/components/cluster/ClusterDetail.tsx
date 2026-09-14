@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import NodeList from './NodeList';
 import AutoScalerTab from './AutoScalerTab';
+import NodeGroupTab from './NodeGroupTab';
+import ClusterOversellTab from './ClusterOversellTab';
 
 interface ClusterDetailProps {
   clusterName: string;
@@ -11,17 +13,19 @@ interface ClusterDetailProps {
 
 export default function ClusterDetail({ clusterName, onBack }: ClusterDetailProps) {
   const [activeTab, setActiveTab] = useState('basic');
+  const [nodeGroupFilter, setNodeGroupFilter] = useState<string | null>(null);
 
   const tabs = [
     { id: 'basic', label: '基本信息' },
     { id: 'nodes', label: '节点列表' },
+    { id: 'node-groups', label: '节点组' },
     { id: 'resources', label: '资源列表' },
     { id: 'autoscaler', label: '弹性伸缩' },
     { id: 'strategy', label: '混部策略' },
     { id: 'sharing', label: '闲置算力分享计划' },
-    { id: 'appstore', label: '应用商店' },
     { id: 'k8s', label: 'K8S权限管理' },
     { id: 'network', label: '网络策略' },
+    { id: 'cluster-oversell', label: '集群超卖' },
   ];
 
   const clusterInfo = {
@@ -357,11 +361,29 @@ export default function ClusterDetail({ clusterName, onBack }: ClusterDetailProp
             </div>
           )}
 
-          {activeTab === 'nodes' && <NodeList clusterName={clusterName} />}
+          {activeTab === 'nodes' && (
+            <NodeList
+              clusterName={clusterName}
+              filterNodeGroup={nodeGroupFilter ?? undefined}
+              onClearNodeGroupFilter={() => setNodeGroupFilter(null)}
+            />
+          )}
 
           {activeTab === 'autoscaler' && <AutoScalerTab />}
 
-          {activeTab !== 'basic' && activeTab !== 'nodes' && activeTab !== 'autoscaler' && (
+          {activeTab === 'node-groups' && (
+            <NodeGroupTab
+              clusterName={clusterName}
+              onViewGroupNodes={(groupName) => {
+                setNodeGroupFilter(groupName);
+                setActiveTab('nodes');
+              }}
+            />
+          )}
+
+          {activeTab === 'cluster-oversell' && <ClusterOversellTab clusterName={clusterName} />}
+
+          {activeTab !== 'basic' && activeTab !== 'nodes' && activeTab !== 'node-groups' && activeTab !== 'autoscaler' && activeTab !== 'cluster-oversell' && (
             <div className="bg-white rounded border border-gray-200 p-12 text-center">
               <div className="text-sm text-gray-500">
                 {tabs.find(t => t.id === activeTab)?.label}功能开发中...

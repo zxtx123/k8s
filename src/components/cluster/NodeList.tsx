@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 
 interface NodeListProps {
   clusterName: string;
+  filterNodeGroup?: string;
+  onClearNodeGroupFilter?: () => void;
 }
 
 type Node = {
   name: string;
   ip: string;
+  nodeGroup: string;
   createMethod: string;
   status: string;
   kernelVersion: string;
@@ -93,7 +96,7 @@ function CircularGauge({
   );
 }
 
-export default function NodeList({ clusterName }: NodeListProps) {
+export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGroupFilter }: NodeListProps) {
   const [nodeType, setNodeType] = useState<'worker' | 'master'>('worker');
   const [selectedFilters, setSelectedFilters] = useState({
     nodeLabel: 'all',
@@ -103,6 +106,7 @@ export default function NodeList({ clusterName }: NodeListProps) {
     availabilityZone: 'all',
   });
   const [searchTerm, setSearchTerm] = useState('');
+  const [nodeGroupFilter, setNodeGroupFilter] = useState(filterNodeGroup ?? 'all');
   const [selectedNodeNames, setSelectedNodeNames] = useState<string[]>([]);
   const [isBatchMenuOpen, setIsBatchMenuOpen] = useState(false);
   const [isBatchOversellDialogOpen, setIsBatchOversellDialogOpen] = useState(false);
@@ -131,6 +135,7 @@ export default function NodeList({ clusterName }: NodeListProps) {
     {
       name: 'p95322v.hulk.bjzdt.',
       ip: '11.42.129.7',
+      nodeGroup: '通用计算组',
       createMethod: '新建节点',
       status: '正常',
       kernelVersion: '5.10.134-14.an8.x86_6',
@@ -150,6 +155,7 @@ export default function NodeList({ clusterName }: NodeListProps) {
     {
       name: 'p95323v.hulk.bjzdt.',
       ip: '11.42.129.8',
+      nodeGroup: '大数据内存组',
       createMethod: '已有节点',
       status: '正常',
       kernelVersion: '5.10.134-14.an8.x86_6',
@@ -169,6 +175,7 @@ export default function NodeList({ clusterName }: NodeListProps) {
     {
       name: 'p95324v.hulk.bjzdt.',
       ip: '11.42.129.9',
+      nodeGroup: '通用计算组',
       createMethod: '弹性伸缩',
       status: '正常',
       kernelVersion: '5.10.134-14.an8.x86_6',
@@ -187,8 +194,15 @@ export default function NodeList({ clusterName }: NodeListProps) {
     },
   ];
 
-  const selectedNodes = nodes.filter((node) => selectedNodeNames.includes(node.name));
-  const allNodesSelected = nodes.length > 0 && selectedNodeNames.length === nodes.length;
+  const nodeGroupOptions = Array.from(new Set(nodes.map((node) => node.nodeGroup)));
+  const displayNodes = nodes.filter(
+    (node) =>
+      (filterNodeGroup ? node.nodeGroup === filterNodeGroup : true) &&
+      (nodeGroupFilter === 'all' || node.nodeGroup === nodeGroupFilter)
+  );
+
+  const selectedNodes = displayNodes.filter((node) => selectedNodeNames.includes(node.name));
+  const allNodesSelected = displayNodes.length > 0 && selectedNodes.length === displayNodes.length;
   const partiallySelected = selectedNodeNames.length > 0 && !allNodesSelected;
 
   const toggleNodeSelection = (nodeName: string) => {
@@ -200,7 +214,7 @@ export default function NodeList({ clusterName }: NodeListProps) {
   };
 
   const toggleAllNodes = () => {
-    setSelectedNodeNames(allNodesSelected ? [] : nodes.map((node) => node.name));
+    setSelectedNodeNames(allNodesSelected ? [] : displayNodes.map((node) => node.name));
   };
 
   useEffect(() => {
@@ -385,6 +399,44 @@ export default function NodeList({ clusterName }: NodeListProps) {
 
       {/* 节点筛选器 */}
       <div className="flex flex-wrap items-center gap-4">
+        {filterNodeGroup && (
+          <div className="flex items-center gap-2 rounded border border-blue-200 bg-blue-50 px-3 py-1.5">
+            <span className="text-sm text-blue-700">
+              节点组过滤：<span className="font-medium">{filterNodeGroup}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setNodeGroupFilter('all');
+                setSelectedNodeNames([]);
+                onClearNodeGroupFilter?.();
+              }}
+              className="rounded p-0.5 text-blue-400 transition-colors hover:bg-blue-100 hover:text-blue-600"
+              aria-label="清除节点组过滤"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600 whitespace-nowrap">所属节点组:</label>
+          <select
+            value={nodeGroupFilter}
+            onChange={(e) => {
+              setNodeGroupFilter(e.target.value);
+              setSelectedNodeNames([]);
+            }}
+            className="px-3 py-1.5 bg-white border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
+          >
+            <option value="all">全部</option>
+            {nodeGroupOptions.map((groupName) => (
+              <option key={groupName} value={groupName}>{groupName}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-600 whitespace-nowrap">节点标签:</label>
           <select
@@ -452,7 +504,7 @@ export default function NodeList({ clusterName }: NodeListProps) {
 
       {/* 节点列表表格 */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-[1680px] w-full text-sm">
+        <table className="min-w-[1560px] w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
               <th className="w-12 whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">
@@ -469,6 +521,7 @@ export default function NodeList({ clusterName }: NodeListProps) {
               </th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">节点名称</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">节点IP</th>
+              <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">所属节点组</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">创建方式</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">节点状态</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">内核版本</th>
@@ -476,7 +529,6 @@ export default function NodeList({ clusterName }: NodeListProps) {
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">规格</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">CPU (core)</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">内存 (G)</th>
-              <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">GPU信息</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">Pods</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">vGPU</th>
               <th className="whitespace-nowrap px-4 py-3 text-left font-medium text-gray-700">创建时间</th>
@@ -484,7 +536,7 @@ export default function NodeList({ clusterName }: NodeListProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {nodes.map((node) => (
+            {displayNodes.map((node) => (
               <tr key={node.name} className="hover:bg-gray-50">
                 <td className="w-12 whitespace-nowrap px-4 py-3">
                   <input
@@ -506,6 +558,7 @@ export default function NodeList({ clusterName }: NodeListProps) {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-900">{node.ip}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-gray-700">{node.nodeGroup}</td>
                 <td className="px-4 py-3 text-gray-700">{node.createMethod}</td>
                 <td className="whitespace-nowrap px-4 py-3">
                   <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">正常</span>
@@ -519,7 +572,6 @@ export default function NodeList({ clusterName }: NodeListProps) {
                 <td className="px-4 py-3 text-gray-700">
                   {node.memUsed.toFixed(2)} / {node.memTotal.toFixed(2)}
                 </td>
-                <td className="px-4 py-3 text-gray-500">{node.gpuInfo || '-'}</td>
                 <td className="px-4 py-3 text-gray-700">
                   {node.podsUsed} / {node.podsTotal}
                 </td>
