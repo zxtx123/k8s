@@ -59,6 +59,19 @@ const customImages = [
   { id: 'rocky-9.3', label: 'Rocky Linux 9.3 x86_64' },
 ];
 
+const availableZones = [
+  { id: 'bjcm', label: 'bjcm(北京移动)' },
+  { id: 'bjmd', label: 'bjmd(北京联通)' },
+  { id: 'bjzdt', label: 'bjzdt(北京电信25G)' },
+  { id: 'bjzdc', label: 'bjzdc(北京联通25G)' },
+  { id: 'bjwdt', label: 'bjwdt(北京电信25G-特价)' },
+  { id: 'aicn', label: 'aicn(北京阿里云)' },
+];
+
+const existingCloudProjects = [
+  { id: 'project-1234', label: '1234(产品团队-专用)' },
+];
+
 const initialGroups: NodeGroup[] = [
   { id: 1, name: '通用计算组', nodeCount: 3, creator: 'zhangxing5', createTime: '2026-08-12 14:30:00', dataDiskSize: 200 },
   { id: 2, name: '大数据内存组', nodeCount: 2, creator: 'jidongdong', createTime: '2026-08-20 09:15:00', dataDiskSize: 200 },
@@ -99,7 +112,12 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
   // 创建节点组表单
   const [groupName, setGroupName] = useState('');
   const [groupNameError, setGroupNameError] = useState('');
+  const [nodeCreateType, setNodeCreateType] = useState<'create' | 'existing'>('create');
   const [nodeType, setNodeType] = useState<'vm' | 'baremetal'>('vm');
+  const [existingZone, setExistingZone] = useState('bjzdt');
+  const [existingProject, setExistingProject] = useState('project-1234');
+  const [existingNodeType, setExistingNodeType] = useState('vm');
+  const [existingNodeName, setExistingNodeName] = useState('');
   const [nodeSubnet, setNodeSubnet] = useState('11.51.176.0/22');
   const [vcpuFilter, setVcpuFilter] = useState('all');
   const [memoryFilter, setMemoryFilter] = useState('all');
@@ -123,7 +141,12 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
   const resetCreateForm = () => {
     setGroupName('');
     setGroupNameError('');
+    setNodeCreateType('create');
     setNodeType('vm');
+    setExistingZone('bjzdt');
+    setExistingProject('project-1234');
+    setExistingNodeType('vm');
+    setExistingNodeName('');
     setNodeSubnet('11.51.176.0/22');
     setVcpuFilter('all');
     setMemoryFilter('all');
@@ -280,6 +303,35 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
             <div className="space-y-6">
               <h3 className="text-base font-medium text-gray-900">节点配置</h3>
 
+              {/* 节点创建方式 */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">
+                  <span className="text-red-500">*</span>节点创建方式
+                </label>
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => setNodeCreateType('create')}
+                    className={`rounded-l px-4 py-2 text-sm transition-colors ${
+                      nodeCreateType === 'create' ? 'bg-blue-600 text-white' : 'border border-gray-300 bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    新建节点
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNodeCreateType('existing')}
+                    className={`rounded-r px-4 py-2 text-sm transition-colors ${
+                      nodeCreateType === 'existing' ? 'bg-blue-600 text-white' : 'border border-gray-300 bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    已有节点
+                  </button>
+                </div>
+              </div>
+
+              {nodeCreateType === 'create' && (
+              <>
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
                 <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">
                   <span className="text-red-500">*</span>节点类型
@@ -717,7 +769,180 @@ export default function NodeGroupTab({ clusterName, onViewGroupNodes }: NodeGrou
                   </div>
                 </div>
               </div>
+              </>
+              )}
             </div>
+
+              {nodeCreateType === 'existing' && (
+              <>
+              {/* 可用区 */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                <label className="shrink-0 text-sm font-medium text-gray-700 md:w-28 md:pt-2">
+                  <span className="text-red-500">*</span>可用区
+                </label>
+                <div className="flex flex-1 flex-wrap gap-x-6 gap-y-3">
+                  {availableZones.map((zone) => (
+                    <label key={zone.id} className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
+                      <input
+                        type="radio"
+                        name="ng-zone"
+                        value={zone.id}
+                        checked={existingZone === zone.id}
+                        onChange={() => setExistingZone(zone.id)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{zone.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* 云服务器项目 */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                <label className="shrink-0 text-sm font-medium text-gray-700 md:w-28 md:pt-2">
+                  <span className="text-red-500">*</span>云服务器项目
+                </label>
+                <select
+                  value={existingProject}
+                  onChange={(e) => setExistingProject(e.target.value)}
+                  className="rounded border border-gray-300 bg-white px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                >
+                  {existingCloudProjects.map((project) => (
+                    <option key={project.id} value={project.id}>{project.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 选择已有节点 */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                <label className="shrink-0 text-sm font-medium text-gray-700 md:w-28 md:pt-2">
+                  <span className="text-red-500">*</span>选择已有节点
+                </label>
+                <div className="flex flex-wrap items-center gap-4">
+                  <span className="text-sm font-medium text-gray-700">节点类型</span>
+                  <select
+                    value={existingNodeType}
+                    onChange={(e) => setExistingNodeType(e.target.value)}
+                    className="rounded border border-gray-300 bg-white px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="vm">虚拟机</option>
+                    <option value="baremetal">裸金属</option>
+                  </select>
+                  <span className="text-sm font-medium text-gray-700">节点名称</span>
+                  <div className="flex items-center">
+                    <input
+                      type="text"
+                      value={existingNodeName}
+                      onChange={(e) => setExistingNodeName(e.target.value)}
+                      placeholder="请输入名称或IP，一行一个"
+                      className="w-64 rounded-l border border-gray-300 px-4 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      className="rounded-r border border-l-0 border-gray-300 bg-gray-50 px-3 py-2 text-gray-500 hover:bg-gray-100"
+                    >
+                      搜索
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 筛选提示 + 节点表格 */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                <label className="shrink-0 text-sm text-gray-700 md:w-28 md:pt-2">筛选</label>
+                <div className="min-w-0 flex-1">
+                  <div className="rounded bg-blue-50 px-4 py-3 text-sm text-gray-700">
+                    <p>如果只添加一个节点，节点规格最低要求为16C，避免因系统组件占用导致资源不足。</p>
+                    <p>该集群为kata集群，只能添加虚拟化嵌套的机器。</p>
+                  </div>
+                  <div className="mt-4 overflow-hidden rounded border border-gray-200">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-600">
+                          <th className="w-12 px-4 py-3">
+                            <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600" disabled />
+                          </th>
+                          <th className="px-4 py-3 font-medium">节点名称</th>
+                          <th className="px-4 py-3 font-medium">节点IP</th>
+                          <th className="px-4 py-3 font-medium">规格</th>
+                          <th className="px-4 py-3 font-medium">vCPU</th>
+                          <th className="px-4 py-3 font-medium">内存</th>
+                          <th className="px-4 py-3 font-medium">操作系统</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td colSpan={7} className="px-4 py-12 text-center">
+                            <div className="flex flex-col items-center gap-2 text-gray-400">
+                              <span className="text-sm">暂无数据</span>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Docker版本 */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                <label className="shrink-0 text-sm font-medium text-gray-700 md:w-28 md:pt-2">
+                  <span className="text-red-500">*</span>Docker版本
+                </label>
+                <p className="min-w-0 flex-1 text-sm text-gray-700">
+                  需要20.10以上的版本，如果机器上有低于该版本的docker，请先卸载。系统会安装高版本的Docker
+                </p>
+              </div>
+
+              {/* 操作系统 */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                <label className="shrink-0 text-sm font-medium text-gray-700 md:w-28 md:pt-2">
+                  <span className="text-red-500">*</span>操作系统
+                </label>
+                <p className="min-w-0 flex-1 text-sm text-gray-700">
+                  建议使用龙蜥8.2以上操作系统，支持离在线混部；其他操作系统不支持内核级抢占，只支持CPU静态隔离，混部效果不好。
+                  如果是CentOS，操作系统版本要求7或以上，内核版本要求5.1或以上
+                </p>
+              </div>
+
+              {/* 数据盘 */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                <label className="shrink-0 text-sm font-medium text-gray-700 md:w-28 md:pt-2">
+                  <span className="text-red-500">*</span>数据盘
+                </label>
+                <p className="min-w-0 flex-1 text-sm text-gray-700">
+                  将容器和镜像存储在数据盘，如果当前集群已启用动态本地盘，添加的节点不支持使用本地盘，只能使用云盘。
+                </p>
+              </div>
+
+              {/* 标签 */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                <label className="shrink-0 text-sm font-medium text-gray-700 md:w-28 md:pt-2">标签</label>
+                <div className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setTags((prev) => [...prev, { key: '', value: '' }])}
+                    className="text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    + 添加
+                  </button>
+                </div>
+              </div>
+
+              {/* 污点 */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
+                <label className="shrink-0 text-sm font-medium text-gray-700 md:w-28 md:pt-2">污点</label>
+                <div className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    className="text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    + 添加
+                  </button>
+                </div>
+              </div>
+              </>
+              )}
 
             <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
               <button
