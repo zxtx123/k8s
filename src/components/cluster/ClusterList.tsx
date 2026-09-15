@@ -44,8 +44,9 @@ export default function ClusterList({
   onViewDetail,
 }: ClusterListProps) {
   const [oversellCluster, setOversellCluster] = useState<Cluster | null>(null);
+  const [oversellEnabled, setOversellEnabled] = useState(false);
   const [oversellFactor, setOversellFactor] = useState('3');
-  const [oversellFactors, setOversellFactors] = useState<Record<number, string>>({});
+  const [oversellConfigs, setOversellConfigs] = useState<Record<number, { enabled: boolean; factor: string }>>({});
   const [oversellError, setOversellError] = useState('');
   const [moreMenu, setMoreMenu] = useState<{
     cluster: Cluster;
@@ -239,19 +240,26 @@ export default function ClusterList({
 
   const openOversellConfig = (cluster: Cluster) => {
     setOversellCluster(cluster);
-    setOversellFactor(oversellFactors[cluster.id] ?? '3');
+    const cfg = oversellConfigs[cluster.id];
+    setOversellEnabled(cfg?.enabled ?? false);
+    setOversellFactor(cfg?.factor ?? '3');
     setOversellError('');
   };
 
   const saveOversellConfig = () => {
-    const factor = Number(oversellFactor);
-    if (!Number.isFinite(factor) || factor <= 0) {
-      setOversellError('请输入大于 0 的超卖倍数');
-      return;
+    if (oversellEnabled) {
+      const factor = Number(oversellFactor);
+      if (!Number.isFinite(factor) || factor <= 0) {
+        setOversellError('请输入大于 0 的超卖倍数');
+        return;
+      }
     }
 
     if (oversellCluster) {
-      setOversellFactors((prev) => ({ ...prev, [oversellCluster.id]: oversellFactor }));
+      setOversellConfigs((prev) => ({
+        ...prev,
+        [oversellCluster.id]: { enabled: oversellEnabled, factor: oversellFactor },
+      }));
     }
     setOversellCluster(null);
   };
@@ -532,26 +540,60 @@ export default function ClusterList({
               </button>
             </div>
             <div className="px-5 py-5">
-              <label htmlFor="oversell-factor" className="mb-2 block text-sm font-medium text-gray-700">
-                集群超卖倍数
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  id="oversell-factor"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={oversellFactor}
-                  onChange={(event) => {
-                    setOversellFactor(event.target.value);
-                    setOversellError('');
-                  }}
-                  placeholder="请输入超卖倍数"
-                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <span className="shrink-0 text-sm text-gray-600">倍</span>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <label htmlFor="oversell-enabled" className="text-sm font-medium text-gray-700">
+                    开启集群超卖
+                  </label>
+                  <button
+                    type="button"
+                    id="oversell-enabled"
+                    role="switch"
+                    aria-checked={oversellEnabled}
+                    onClick={() => {
+                      setOversellEnabled((prev) => !prev);
+                      setOversellError('');
+                    }}
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
+                      oversellEnabled ? 'bg-blue-600 shadow-inner' : 'bg-gray-300 hover:bg-gray-400'
+                    }`}
+                  >
+                    <span
+                      className={`absolute h-5 w-5 rounded-full bg-white shadow-md ring-1 ring-black/5 transition-all duration-200 ${
+                        oversellEnabled ? 'left-[22px]' : 'left-0.5'
+                      }`}
+                    />
+                  </button>
+                  <span className={`text-sm transition-colors ${oversellEnabled ? 'text-blue-600' : 'text-gray-500'}`}>
+                    {oversellEnabled ? '已开启' : '未开启'}
+                  </span>
+                </div>
+
+                {oversellEnabled && (
+                  <div>
+                    <label htmlFor="oversell-factor" className="mb-2 block text-sm font-medium text-gray-700">
+                      集群超卖倍数
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="oversell-factor"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        value={oversellFactor}
+                        onChange={(event) => {
+                          setOversellFactor(event.target.value);
+                          setOversellError('');
+                        }}
+                        placeholder="请输入超卖倍数"
+                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <span className="shrink-0 text-sm text-gray-600">倍</span>
+                    </div>
+                    {oversellError && <p className="mt-2 text-sm text-red-600">{oversellError}</p>}
+                  </div>
+                )}
               </div>
-              {oversellError && <p className="mt-2 text-sm text-red-600">{oversellError}</p>}
             </div>
             <div className="flex justify-end gap-3 border-t border-gray-200 px-5 py-4">
               <button
