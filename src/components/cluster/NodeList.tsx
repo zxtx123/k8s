@@ -118,6 +118,13 @@ export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGrou
   const [oversellFactor, setOversellFactor] = useState('3');
   const [oversellFactors, setOversellFactors] = useState<Record<string, string>>({});
   const [oversellError, setOversellError] = useState('');
+  const [isBatchSwapDialogOpen, setIsBatchSwapDialogOpen] = useState(false);
+  const [batchSwapSizeInput, setBatchSwapSizeInput] = useState('0');
+  const [batchSwapError, setBatchSwapError] = useState('');
+  const [swapNode, setSwapNode] = useState<Node | null>(null);
+  const [swapSizeInput, setSwapSizeInput] = useState('0');
+  const [swapSizes, setSwapSizes] = useState<Record<string, string>>({});
+  const [swapNodeError, setSwapNodeError] = useState('');
   const [moreMenu, setMoreMenu] = useState<{
     node: Node;
     top: number;
@@ -264,6 +271,25 @@ export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGrou
     setOversellNode(null);
   };
 
+  const openSwapConfig = (node: Node) => {
+    setSwapNode(node);
+    setSwapSizeInput(swapSizes[node.name] ?? '0');
+    setSwapNodeError('');
+  };
+
+  const saveSwapConfig = () => {
+    const size = Number(swapSizeInput);
+    if (!Number.isFinite(size) || size < 0 || !Number.isInteger(size)) {
+      setSwapNodeError('请输入不小于 0 的整数 SWAP 大小');
+      return;
+    }
+
+    if (swapNode) {
+      setSwapSizes((prev) => ({ ...prev, [swapNode.name]: swapSizeInput }));
+    }
+    setSwapNode(null);
+  };
+
   const saveBatchOversellConfig = () => {
     const factor = Number(batchOversellFactor);
     if (!Number.isFinite(factor) || factor <= 0) {
@@ -276,6 +302,20 @@ export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGrou
       ...Object.fromEntries(selectedNodes.map((node) => [node.name, batchOversellFactor])),
     }));
     setIsBatchOversellDialogOpen(false);
+  };
+
+  const saveBatchSwapConfig = () => {
+    const size = Number(batchSwapSizeInput);
+    if (!Number.isFinite(size) || size < 0 || !Number.isInteger(size)) {
+      setBatchSwapError('请输入不小于 0 的整数 SWAP 大小');
+      return;
+    }
+
+    setSwapSizes((prev) => ({
+      ...prev,
+      ...Object.fromEntries(selectedNodes.map((node) => [node.name, batchSwapSizeInput])),
+    }));
+    setIsBatchSwapDialogOpen(false);
   };
 
   const openAddNodePage = () => {
@@ -308,7 +348,7 @@ export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGrou
           <div className="max-w-6xl space-y-8">
             <NodeGroupNodeForm
               showGroupSelect
-              showSwapField={false}
+              showSwapField
               nodeGroupOptions={nodeGroupOptions}
               selectedNodeGroup={addNodeSelectedGroup}
               groupSelectError={addGroupSelectError}
@@ -433,6 +473,21 @@ export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGrou
                   className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-white"
                 >
                   批量设置超卖
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedNodes.length === 0}
+                  title={selectedNodes.length === 0 ? '请先选择节点' : undefined}
+                  onClick={() => {
+                    if (selectedNodes.length === 0) return;
+                    setIsBatchMenuOpen(false);
+                    setBatchSwapSizeInput('0');
+                    setBatchSwapError('');
+                    setIsBatchSwapDialogOpen(true);
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-white"
+                >
+                  批量设置SWAP
                 </button>
               </div>
             )}
@@ -693,6 +748,17 @@ export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGrou
           >
             超卖配置
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              const node = moreMenu.node;
+              setMoreMenu(null);
+              openSwapConfig(node);
+            }}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+          >
+            SWAP设置
+          </button>
         </div>
       )}
 
@@ -770,6 +836,84 @@ export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGrou
         </div>
       )}
 
+      {isBatchSwapDialogOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="batch-swap-dialog-title" className="w-full max-w-md rounded-lg bg-white shadow-xl">
+            <div className="flex items-start justify-between border-b border-gray-200 px-5 py-4">
+              <div>
+                <h2 id="batch-swap-dialog-title" className="text-base font-medium text-gray-900">批量设置SWAP</h2>
+                <p className="mt-1 text-sm text-gray-500">已选择 {selectedNodes.length} 个节点，设置后将统一覆盖现有 SWAP 大小。</p>
+              </div>
+              <button
+                type="button"
+                aria-label="关闭批量SWAP设置"
+                onClick={() => setIsBatchSwapDialogOpen(false)}
+                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4 px-5 py-4">
+              <div>
+                <p className="mb-2 text-sm font-medium text-gray-700">已勾选节点</p>
+                <ul className="max-h-36 space-y-2 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                  {selectedNodes.map((node) => (
+                    <li key={node.name} className="flex items-center justify-between gap-3">
+                      <span className="min-w-0 truncate">{node.name}</span>
+                      <span className="shrink-0 text-gray-500">{node.ip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <label htmlFor="batch-swap-size" className="mb-2 block text-sm font-medium text-gray-700">
+                  SWAP大小
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="batch-swap-size"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={batchSwapSizeInput}
+                    onChange={(event) => {
+                      setBatchSwapSizeInput(event.target.value);
+                      setBatchSwapError('');
+                    }}
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    placeholder="请输入SWAP大小"
+                  />
+                  <span className="shrink-0 text-sm text-gray-500">GB</span>
+                </div>
+                <p className="mt-2 text-sm text-gray-500">SWAP 大小不能超过节点数据盘大小。</p>
+                {batchSwapError && <p className="mt-2 text-sm text-red-600">{batchSwapError}</p>}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-gray-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setIsBatchSwapDialogOpen(false)}
+                className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={saveBatchSwapConfig}
+                className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+              >
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {oversellNode && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
           <div role="dialog" aria-modal="true" aria-labelledby="node-oversell-dialog-title" className="w-full max-w-md rounded-lg bg-white shadow-xl">
@@ -821,6 +965,70 @@ export default function NodeList({ clusterName, filterNodeGroup, onClearNodeGrou
               <button
                 type="button"
                 onClick={saveOversellConfig}
+                className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+              >
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {swapNode && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="node-swap-dialog-title" className="w-full max-w-md rounded-lg bg-white shadow-xl">
+            <div className="flex items-start justify-between border-b border-gray-200 px-5 py-4">
+              <div>
+                <h2 id="node-swap-dialog-title" className="text-base font-medium text-gray-900">SWAP设置</h2>
+                <p className="mt-1 text-sm text-gray-500">节点：{swapNode.name}</p>
+              </div>
+              <button
+                type="button"
+                aria-label="关闭SWAP设置"
+                onClick={() => setSwapNode(null)}
+                className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-5 py-4">
+              <label htmlFor="node-swap-size" className="mb-2 block text-sm font-medium text-gray-700">
+                SWAP大小
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="node-swap-size"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={swapSizeInput}
+                  onChange={(event) => {
+                    setSwapSizeInput(event.target.value);
+                    setSwapNodeError('');
+                  }}
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  placeholder="请输入SWAP大小"
+                />
+                <span className="shrink-0 text-sm text-gray-500">GB</span>
+              </div>
+              <p className="mt-2 text-sm text-gray-500">SWAP 大小不能超过节点数据盘大小。</p>
+              {swapNodeError && <p className="mt-2 text-sm text-red-600">{swapNodeError}</p>}
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-gray-200 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setSwapNode(null)}
+                className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={saveSwapConfig}
                 className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
               >
                 确定

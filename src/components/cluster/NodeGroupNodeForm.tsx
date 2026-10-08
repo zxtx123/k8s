@@ -6,7 +6,6 @@ interface DataDiskConfig {
   type: '高效云盘';
   size: number;
   deleteWithInstance: boolean;
-  swapEnabled: boolean;
   swapSize: string;
 }
 
@@ -74,12 +73,9 @@ const newNodeZones = [
 ];
 
 function validateSwapSize(disk: DataDiskConfig) {
-  if (!disk.swapEnabled) return '';
-  const maxSwapSize = Math.floor(disk.size / 3);
   const swapSize = Number(disk.swapSize);
-  if (maxSwapSize < 1) return '当前数据盘容量不足以开启 SWAP';
-  if (!disk.swapSize || !Number.isInteger(swapSize) || swapSize < 1 || swapSize > maxSwapSize) {
-    return `SWAP 大小需为 1-${maxSwapSize} GB，且不得超过数据盘容量的 1/3`;
+  if (!disk.swapSize || !Number.isInteger(swapSize) || swapSize < 0 || swapSize > disk.size) {
+    return `SWAP 大小需为 0-${disk.size} GB，且不得超过数据盘大小`;
   }
   return '';
 }
@@ -434,7 +430,7 @@ export default function NodeGroupNodeForm({
                       <button
                         type="button"
                         onClick={() =>
-                          setDataDisk({ type: '高效云盘', size: 200, deleteWithInstance: true, swapEnabled: false, swapSize: '' })
+                          setDataDisk({ type: '高效云盘', size: 200, deleteWithInstance: true, swapSize: '0' })
                         }
                         className="mt-2 text-sm text-blue-600 hover:text-blue-700"
                       >
@@ -446,55 +442,35 @@ export default function NodeGroupNodeForm({
 
                 {showSwapField && (
                 <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-start md:gap-8">
-                  <label className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">开启 SWAP</label>
+                  <label htmlFor="node-group-swap-size" className="shrink-0 text-sm font-medium text-gray-700 md:w-24 md:pt-2">SWAP</label>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-3">
-                      <label className={`flex items-center gap-2 ${dataDisk ? 'cursor-pointer' : 'cursor-not-allowed text-gray-400'}`}>
-                        <input
-                          type="checkbox"
-                          checked={dataDisk?.swapEnabled ?? false}
-                          disabled={!dataDisk}
-                          onChange={(e) => {
-                            const enabled = e.target.checked;
-                            setDataDisk((current) => {
-                              if (!current) return current;
-                              const next = { ...current, swapEnabled: enabled };
-                              setSwapSizeError(validateSwapSize(next));
-                              return next;
-                            });
-                          }}
-                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed"
-                        />
-                        <span className="text-sm">开启</span>
-                      </label>
-                      {dataDisk?.swapEnabled && (
-                        <>
-                          <input
-                            type="number"
-                            min={1}
-                            max={Math.floor(dataDisk.size / 3)}
-                            step={1}
-                            value={dataDisk.swapSize}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              setDataDisk((current) => {
-                                if (!current) return current;
-                                const next = { ...current, swapSize: value };
-                                setSwapSizeError(validateSwapSize(next));
-                                return next;
-                              });
-                            }}
-                            className={`w-24 rounded border px-4 py-2 text-sm outline-none focus:ring-1 ${
-                              swapSizeError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                            }`}
-                          />
-                          <span className="text-sm text-gray-500">GB</span>
-                          <span className="text-xs text-gray-500">最大 {Math.floor(dataDisk.size / 3)} GB（数据盘容量的 1/3）</span>
-                        </>
-                      )}
+                      <input
+                        id="node-group-swap-size"
+                        type="number"
+                        min={0}
+                        max={dataDisk?.size ?? 0}
+                        step={1}
+                        disabled={!dataDisk}
+                        value={dataDisk?.swapSize ?? '0'}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setDataDisk((current) => {
+                            if (!current) return current;
+                            const next = { ...current, swapSize: value };
+                            setSwapSizeError(validateSwapSize(next));
+                            return next;
+                          });
+                        }}
+                        className={`w-24 rounded border px-4 py-2 text-sm outline-none focus:ring-1 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 ${
+                          swapSizeError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                        }`}
+                      />
+                      <span className="text-sm text-gray-500">GB</span>
+                      {dataDisk && <span className="text-xs text-gray-500">最大 {dataDisk.size} GB</span>}
                       {!dataDisk && <span className="text-xs text-gray-400">请先添加数据盘后配置 SWAP</span>}
                     </div>
-                    {dataDisk?.swapEnabled && swapSizeError && (
+                    {swapSizeError && (
                       <p className="mt-1 text-xs text-red-600">{swapSizeError}</p>
                     )}
                   </div>
