@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 
 interface PVCManagementProps {
@@ -42,6 +44,7 @@ export default function PVCManagement({ onCreatePVC }: PVCManagementProps) {
 
   return (
     <div className="flex flex-col h-full">
+      <ResourceBreadcrumb resource="PVC" />
       {/* 顶部操作栏 */}
       <div className="flex items-center justify-between py-3 px-4">
         <div className="flex items-center gap-4">

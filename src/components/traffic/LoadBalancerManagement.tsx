@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 
 interface LoadBalancerManagementProps {
@@ -71,6 +73,7 @@ export default function LoadBalancerManagement({ onMenuItemChange, onCreateLoadB
 
   return (
     <div className="flex flex-col h-full">
+      <ResourceBreadcrumb resource="负载均衡" />
       {/* 操作栏 */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#F7F8FA] border-b border-[#E5E6EB]">
         <div className="flex items-center gap-3">

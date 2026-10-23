@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import ProjectSwitcherBreadcrumb, { type ProjectSwitcherApplication, type ProjectSwitcherProject } from '@/components/layout/ProjectSwitcherBreadcrumb';
 
 interface Cluster {
   id: number;
@@ -21,6 +22,11 @@ interface Cluster {
 }
 
 interface ClusterListProps {
+  projectName?: string;
+  projects?: ProjectSwitcherProject[];
+  applicationsByProject?: Record<number, ProjectSwitcherApplication[]>;
+  onProjectChange?: (project: ProjectSwitcherProject) => void;
+  onApplicationChange?: (project: ProjectSwitcherProject, application: ProjectSwitcherApplication) => void;
   searchTerm: string;
   onSearchChange: (value: string) => void;
   currentPage: number;
@@ -33,6 +39,11 @@ interface ClusterListProps {
 }
 
 export default function ClusterList({
+  projectName = '默认项目',
+  projects = [{ id: 1, name: '默认项目' }],
+  applicationsByProject = {},
+  onProjectChange,
+  onApplicationChange,
   searchTerm,
   onSearchChange,
   currentPage,
@@ -267,18 +278,7 @@ export default function ClusterList({
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* 面包屑导航区域 */}
-      <div className="flex items-center justify-between h-14 px-6 text-sm text-gray-600 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <span>产品团队-专用</span>
-          <span className="text-gray-400">{'>'}</span>
-          <span>stark测试</span>
-          <span className="text-gray-400">{'>'}</span>
-          <span className="text-gray-900 font-medium">独享集群</span>
-        </div>
-        <a href="#" className="text-blue-600 hover:underline">
-          CIS帮助文档
-        </a>
-      </div>
+      <ProjectSwitcherBreadcrumb projectName={projectName} projects={projects} applicationsByProject={applicationsByProject} onProjectChange={onProjectChange} onApplicationChange={onApplicationChange} suffix={<><span className="text-gray-400">{'>'}</span><span className="font-medium text-gray-900">独享集群</span></>} />
 
       {/* 内容区域 */}
       <div className="min-h-0 flex-1 overflow-auto bg-gray-50">

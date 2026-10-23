@@ -1,6 +1,74 @@
 'use client';
 
-import { useState } from 'react';
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
+import { useState, type ReactNode } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
+function AlertPolicyActions({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-4 text-[#165DFF]">
+      <button className="cursor-pointer hover:underline">编辑</button>
+      <button className="cursor-pointer hover:underline">复制</button>
+      <button className="cursor-pointer hover:underline">启用</button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button aria-label={`告警策略 ${title} 更多操作`} className="cursor-pointer p-1 hover:text-[#0E4ADB]">
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="3" r="1" /><circle cx="8" cy="8" r="1" /><circle cx="8" cy="13" r="1" /></svg>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-20 rounded border-[#D8E0E8]">
+          <DropdownMenuItem className="cursor-pointer">删除</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
+function WorkloadFieldLabel({ children, required = false, hint = false }: { children: ReactNode; required?: boolean; hint?: boolean }) {
+  return <label className="w-28 shrink-0 text-right text-sm text-[#63748A]">{required && <span className="mr-1 text-[#FF4D4F]">*</span>}{children}{hint && <span className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full border border-[#8C9AAE] text-[11px]">?</span>}</label>;
+}
+
+function WorkloadAlertModal({ onClose }: { onClose: () => void }) {
+  const [type, setType] = useState<'normal' | 'custom' | 'event'>('normal');
+  const [scope, setScope] = useState<'project' | 'application'>('application');
+  const [workloadType, setWorkloadType] = useState('全部');
+  const [workload, setWorkload] = useState('全部');
+  const [container, setContainer] = useState('全部');
+  const [title, setTitle] = useState('');
+  const [metric, setMetric] = useState('内存使用率（含缓存）');
+  const [operator, setOperator] = useState('>');
+  const [threshold, setThreshold] = useState('0');
+  const [duration, setDuration] = useState('60');
+  const [maxAlertCount, setMaxAlertCount] = useState('');
+  const [alertGroup, setAlertGroup] = useState('');
+  const [callbackUrl, setCallbackUrl] = useState('');
+  const [error, setError] = useState('');
+  const fieldClass = 'h-10 rounded border border-[#D8E0E8] bg-white px-3 text-sm text-[#202020] outline-none focus:border-[#0066FF]';
+  const selectClass = `${fieldClass} w-full`;
+  return (
+    <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/45 p-2">
+      <div className="relative flex max-h-[calc(100vh-8px)] w-[min(936px,calc(100vw-16px))] flex-col overflow-hidden rounded bg-[#F6F8F9] shadow-xl">
+        <div className="flex h-[68px] shrink-0 items-center justify-between border-b border-[#D8E0E8] bg-white px-8"><h3 className="text-xl font-medium text-[#202020]">创建工作负载告警策略</h3><button aria-label="关闭创建工作负载告警策略" onClick={onClose} className="text-3xl leading-none text-[#8C9AAE] hover:text-[#202020]">×</button></div>
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-10 py-8">
+          <div className="flex items-center"><WorkloadFieldLabel required>类型：</WorkloadFieldLabel><div className="flex items-center gap-6 pl-3">{[['normal','常规'],['custom','自定义'],['event','事件']].map(([value, label]) => <label key={value} className="flex cursor-pointer items-center gap-2 text-base text-[#4B5563]"><input type="radio" name="workload-alert-type" checked={type === value} onChange={() => setType(value as typeof type)} className="h-5 w-5 accent-[#0066FF]" />{label}</label>)}</div></div>
+          <div className="flex items-center"><WorkloadFieldLabel required>生效范围：</WorkloadFieldLabel><div className="flex items-center gap-6 pl-3">{[['project','项目级'],['application','应用级']].map(([value, label]) => <label key={value} className="flex cursor-pointer items-center gap-2 text-base text-[#4B5563]"><input type="radio" name="workload-alert-scope" checked={scope === value} onChange={() => { const nextScope = value as typeof scope; setScope(nextScope); if (nextScope === 'project') { setWorkloadType('全部'); setWorkload('全部'); setContainer('全部'); } setError(''); }} className="h-5 w-5 accent-[#0066FF]" />{label}</label>)}</div></div>
+          <div className="flex items-center"><WorkloadFieldLabel required>标题：</WorkloadFieldLabel><input value={title} onChange={event => { setTitle(event.target.value); setError(''); }} className={`${fieldClass} ml-3 flex-1`} /></div>
+          <div className="flex items-center"><WorkloadFieldLabel required>负载类型：</WorkloadFieldLabel><select value={workloadType} onChange={event => setWorkloadType(event.target.value)} className={`${selectClass} ml-3 flex-1`}><option>全部</option>{scope === 'application' && <><option>Deployment</option><option>StatefulSet</option><option>DaemonSet</option><option>CronJob</option><option>Job</option></>}</select></div>
+          <div className="flex items-center"><WorkloadFieldLabel required>负载：</WorkloadFieldLabel><select value={workload} onChange={event => setWorkload(event.target.value)} className={`${selectClass} ml-3 flex-1`}><option>全部</option>{scope === 'application' && <><option>zxtest-ffffffff</option><option>zxtest-fsdffds</option><option>zxtest-copytest</option></>}</select></div>
+          <div className="flex items-center"><WorkloadFieldLabel required>容器：</WorkloadFieldLabel><select value={container} onChange={event => setContainer(event.target.value)} className={`${selectClass} ml-3 flex-1`}><option>全部</option>{scope === 'application' && <option>container-1</option>}</select></div>
+          <div className="flex items-center"><WorkloadFieldLabel required>触发条件：</WorkloadFieldLabel><div className="ml-3 flex min-w-0 flex-1 items-center gap-2"><select value={metric} onChange={event => setMetric(event.target.value)} className={`${fieldClass} min-w-0 flex-1`}><option>内存使用率（含缓存）</option><option>CPU使用率</option><option>内存使用率（不含缓存）</option><option>磁盘使用率</option></select><select value={operator} onChange={event => setOperator(event.target.value)} className={`${fieldClass} w-20 flex-none`}><option value=">">&gt;</option><option value=">=">&ge;</option><option value="<">&lt;</option><option value="<=">&le;</option></select><div className="flex shrink-0 items-center"><input type="number" value={threshold} onChange={event => setThreshold(event.target.value)} className={`${fieldClass} w-24`} /><span className="ml-1 text-[#63748A]">%</span></div></div></div>
+          <div className="flex items-center"><WorkloadFieldLabel required hint>持续时间：</WorkloadFieldLabel><div className="ml-3 flex items-center"><input type="number" value={duration} onChange={event => setDuration(event.target.value)} className={`${fieldClass} w-28`} /><span className="ml-2 text-[#63748A]">秒</span></div></div>
+          <div className="flex items-center"><WorkloadFieldLabel hint>告警最大次数：</WorkloadFieldLabel><input value={maxAlertCount} onChange={event => setMaxAlertCount(event.target.value)} className={`${fieldClass} ml-3 w-28`} /></div>
+          <div className="flex items-start"><WorkloadFieldLabel required>告警组：</WorkloadFieldLabel><div className="ml-3 flex-1"><select value={alertGroup} onChange={event => setAlertGroup(event.target.value)} className={selectClass}><option value="">选择告警组</option><option value="default">默认告警组</option><option value="ops">运维告警组</option></select><p className="mt-2 text-sm text-[#8C9AAE]">配置告警组，请点击 <a href="#" className="text-[#0066FF]">这里</a></p></div></div>
+          <div className="flex items-center"><WorkloadFieldLabel hint>回调地址：</WorkloadFieldLabel><input value={callbackUrl} onChange={event => setCallbackUrl(event.target.value)} className={`${fieldClass} ml-3 flex-1`} /></div>
+          {error && <p role="alert" className="pl-28 text-sm text-[#FF4D4F]">{error}</p>}
+        </div>
+        <div className="flex shrink-0 justify-end gap-3 border-t border-[#D8E0E8] bg-white px-5 py-3"><button onClick={onClose} className="h-10 rounded border border-[#D8E0E8] bg-white px-5 text-sm text-[#4B5563] hover:bg-[#F8F9FA]">取消</button><button onClick={() => { if (!title.trim()) { setError('请输入标题'); return; } if (!alertGroup) { setError('请选择告警组'); return; } onClose(); }} className="h-10 rounded bg-[#0066FF] px-5 text-sm text-white hover:bg-[#0052CC]">确定</button></div>
+      </div>
+    </div>
+  );
+}
 
 export default function AlertPolicy() {
   const [activeTab, setActiveTab] = useState<'workload' | 'cluster'>('workload');
@@ -56,6 +124,7 @@ export default function AlertPolicy() {
       type: '事件',
       title: 'tewtwet',
       status: '已停用',
+      scope: '应用级',
       monitorItem: 'Deployment副本数不符合预期',
       resource: 'zxtest-fdsfsdfsdf',
       container: '全部',
@@ -67,6 +136,7 @@ export default function AlertPolicy() {
       type: '常规',
       title: 'test',
       status: '已停用',
+      scope: '应用级',
       monitorItem: '内存使用率(含缓存)',
       resource: 'zxtest-test',
       container: '全部',
@@ -101,18 +171,7 @@ export default function AlertPolicy() {
   return (
     <div className="flex h-full min-w-0 flex-col overflow-hidden">
       {/* 面包屑导航 */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-[#E5E6EB]">
-        <div className="text-sm text-[#86909C]">
-          <span>stark测试</span>
-          <span className="mx-1">&gt;</span>
-          <span>zxtest</span>
-          <span className="mx-1">&gt;</span>
-          <span className="text-[#1F2329]">告警策略</span>
-        </div>
-        <a href="#" className="text-sm text-[#165DFF]">
-          CIS帮助文档
-        </a>
-      </div>
+      <ResourceBreadcrumb resource="告警策略" />
 
       {/* 标签页 */}
       <div className="flex items-center gap-0 px-6 border-b border-[#E5E6EB] bg-white">
@@ -157,20 +216,21 @@ export default function AlertPolicy() {
       {/* 工作负载告警表格 */}
       {activeTab === 'workload' && (
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4">
-          <div className="min-w-0 overflow-hidden rounded-lg border border-[#E5E6EB]">
-            <table className="w-full table-fixed text-sm [&_td]:min-w-0 [&_td]:truncate [&_td]:px-3 [&_td]:py-3 [&_th]:min-w-0 [&_th]:truncate [&_th]:px-3 [&_th]:py-3">
+          <div className="min-w-0 overflow-x-auto overflow-y-visible rounded-lg border border-[#E5E6EB]">
+            <table className="w-full min-w-[1120px] table-fixed text-sm [&_td]:min-w-0 [&_td]:truncate [&_td]:px-3 [&_td]:py-3 [&_th]:min-w-0 [&_th]:truncate [&_th]:px-3 [&_th]:py-3">
               <thead>
                 <tr className="bg-[#F7F8FA]">
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">ID</th>
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">类型</th>
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">标题</th>
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">状态</th>
+                  <th className="text-left px-4 py-3 text-[#1F2329] font-medium">生效范围</th>
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">监控项</th>
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">资源</th>
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">容器</th>
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">阈值</th>
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">告警级别</th>
-                  <th className="text-left px-4 py-3 text-[#1F2329] font-medium">操作</th>
+                  <th className="w-44 text-left px-4 py-3 text-[#1F2329] font-medium">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -185,27 +245,14 @@ export default function AlertPolicy() {
                         {policy.status}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-[#1F2329]">{policy.scope}</td>
                     <td className="px-4 py-3 text-[#1F2329]">{policy.monitorItem}</td>
                     <td className="px-4 py-3 text-[#1F2329]">{policy.resource}</td>
                     <td className="px-4 py-3 text-[#1F2329]">{policy.container}</td>
                     <td className="px-4 py-3 text-[#1F2329]">{policy.threshold}</td>
                     <td className="px-4 py-3 text-[#1F2329]">{policy.alertLevel}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      {policy.type === '常规' && (
-                        <button className="text-[#165DFF] hover:underline mr-3">编辑</button>
-                      )}
-                      <button className="text-[#165DFF] hover:underline mr-3">复制</button>
-                      <button className="text-[#165DFF] hover:underline mr-3">启用</button>
-                      {policy.type === '事件' && (
-                        <button className="text-[#165DFF] hover:underline mr-3">删除</button>
-                      )}
-                      <button className="text-[#86909C] hover:text-[#1F2329]">
-                        <svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 16 16">
-                          <circle cx="4" cy="8" r="1.5" />
-                          <circle cx="8" cy="8" r="1.5" />
-                          <circle cx="12" cy="8" r="1.5" />
-                        </svg>
-                      </button>
+                      <AlertPolicyActions title={policy.title} />
                     </td>
                   </tr>
                 ))}
@@ -218,8 +265,8 @@ export default function AlertPolicy() {
       {/* 独享集群告警表格 */}
       {activeTab === 'cluster' && (
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4">
-          <div className="min-w-0 overflow-hidden rounded-lg border border-[#E5E6EB]">
-            <table className="w-full table-fixed text-sm [&_td]:min-w-0 [&_td]:truncate [&_td]:px-3 [&_td]:py-3 [&_th]:min-w-0 [&_th]:truncate [&_th]:px-3 [&_th]:py-3">
+          <div className="min-w-0 overflow-x-auto overflow-y-visible rounded-lg border border-[#E5E6EB]">
+            <table className="w-full min-w-[1000px] table-fixed text-sm [&_td]:min-w-0 [&_td]:truncate [&_td]:px-3 [&_td]:py-3 [&_th]:min-w-0 [&_th]:truncate [&_th]:px-3 [&_th]:py-3">
               <thead>
                 <tr className="bg-[#F7F8FA]">
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">ID</th>
@@ -230,7 +277,7 @@ export default function AlertPolicy() {
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">告警对象</th>
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">监控项</th>
                   <th className="text-left px-4 py-3 text-[#1F2329] font-medium">告警级别</th>
-                  <th className="text-left px-4 py-3 text-[#1F2329] font-medium">操作</th>
+                  <th className="w-44 text-left px-4 py-3 text-[#1F2329] font-medium">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -250,16 +297,7 @@ export default function AlertPolicy() {
                     <td className="px-4 py-3 text-[#1F2329]">{policy.monitorItem}</td>
                     <td className="px-4 py-3 text-[#1F2329]">{policy.alertLevel}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <button className="text-[#165DFF] hover:underline mr-3">编辑</button>
-                      <button className="text-[#165DFF] hover:underline mr-3">复制</button>
-                      <button className="text-[#165DFF] hover:underline mr-3">启用</button>
-                      <button className="text-[#86909C] hover:text-[#1F2329]">
-                        <svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 16 16">
-                          <circle cx="4" cy="8" r="1.5" />
-                          <circle cx="8" cy="8" r="1.5" />
-                          <circle cx="12" cy="8" r="1.5" />
-                        </svg>
-                      </button>
+                      <AlertPolicyActions title={policy.title} />
                     </td>
                   </tr>
                 ))}
@@ -291,7 +329,7 @@ export default function AlertPolicy() {
       </div>
 
       {/* 创建独享集群告警策略弹窗 */}
-      {showCreateModal && (
+      {showCreateModal && activeTab === 'cluster' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-6">
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowCreateModal(false)} />
           <div className="relative flex max-h-[calc(100vh-96px)] w-[min(560px,calc(100vw-48px))] flex-col overflow-hidden rounded-lg bg-white shadow-xl">
@@ -600,6 +638,7 @@ export default function AlertPolicy() {
           </div>
         </div>
       )}
+      {showCreateModal && activeTab === 'workload' && <WorkloadAlertModal onClose={() => setShowCreateModal(false)} />}
     </div>
   );
 }

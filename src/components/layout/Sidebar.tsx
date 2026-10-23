@@ -16,14 +16,13 @@ interface SidebarProps {
   onCollapse: () => void;
   activeMenuItem?: string;
   onMenuItemChange?: (itemId: string) => void;
-  isApplicationContext?: boolean;
 }
 
-export default function Sidebar({ collapsed, onCollapse, activeMenuItem, onMenuItemChange, isApplicationContext = false }: SidebarProps) {
+export default function Sidebar({ collapsed, onCollapse, activeMenuItem, onMenuItemChange }: SidebarProps) {
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['cis']));
 
-  // 全局菜单（应用列表页）
-  const globalMenuItems: MenuItem[] = [
+  // 统一菜单，应用列表和详情页共用
+  const menuItems: MenuItem[] = [
     {
       id: 'cis',
       icon: 'server',
@@ -33,32 +32,7 @@ export default function Sidebar({ collapsed, onCollapse, activeMenuItem, onMenuI
       children: [
         { id: 'project', icon: 'folder', label: '项目管理', hasDropdown: false, active: false },
         { id: 'cluster', icon: 'cluster', label: '独享集群', hasDropdown: false, active: false },
-        { id: 'app-list', icon: 'list', label: '应用列表', hasDropdown: false, active: true },
-        { id: 'billing', icon: 'money', label: '费用账单', hasDropdown: false, active: false },
-        { id: 'migration', icon: 'transfer', label: '容器迁移', hasDropdown: false, active: false },
-        { id: 'alert', icon: 'bell', label: '告警中心', hasDropdown: true, active: false, children: [
-          { id: 'alert-policy', icon: 'policy', label: '告警策略', hasDropdown: false, active: false },
-          { id: 'alert-history', icon: 'history', label: '告警历史', hasDropdown: false, active: false },
-        ]},
-        { id: 'apikeys', icon: 'key', label: 'APIKeys', hasDropdown: false, active: false },
-        { id: 'members', icon: 'users', label: '成员管理', hasDropdown: false, active: false },
-        { id: 'settings', icon: 'settings', label: '设置', hasDropdown: false, active: false },
-      ]
-    },
-    { id: 'crs', icon: 'image', label: '容器镜像服务CRS', hasDropdown: true, active: false },
-    { id: 'pricing', icon: 'tag', label: '定价和资源包', hasDropdown: false, active: false },
-    { id: 'resources', icon: 'grid', label: '资源组详情', hasDropdown: false, active: false },
-  ];
-
-  // 应用上下文菜单（应用详情页）
-  const appMenuItems: MenuItem[] = [
-    {
-      id: 'cis',
-      icon: 'server',
-      label: '容器实例服务CIS',
-      hasDropdown: true,
-      active: false,
-      children: [
+        { id: 'app-list', icon: 'list', label: '应用列表', hasDropdown: false, active: false },
         { 
           id: 'workload', 
           icon: 'box', 
@@ -68,6 +42,7 @@ export default function Sidebar({ collapsed, onCollapse, activeMenuItem, onMenuI
           children: [
             { id: 'deployment', label: 'Deployment管理', hasDropdown: false, active: false },
             { id: 'statefulset', label: 'StatefulSet管理', hasDropdown: false, active: false },
+            { id: 'daemonset', label: 'DaemonSet管理', hasDropdown: false, active: false },
             { id: 'cronjob', label: 'CronJob管理', hasDropdown: false, active: false },
             { id: 'job', label: 'Job管理', hasDropdown: false, active: false },
           ]
@@ -127,26 +102,18 @@ export default function Sidebar({ collapsed, onCollapse, activeMenuItem, onMenuI
             { id: 'audit', label: '操作审计', hasDropdown: false, active: false },
           ]
         },
-        { 
-          id: 'platform', 
-          icon: 'tool', 
-          label: '平台管理', 
-          hasDropdown: true, 
-          active: false,
-          children: [
-            { id: 'app-members', label: '成员管理', hasDropdown: false, active: false },
-            { id: 'app-apikeys', label: 'APIKeys', hasDropdown: false, active: false },
-            { id: 'app-config', label: '应用配置', hasDropdown: false, active: false },
-          ]
-        },
+        { id: 'migration', icon: 'transfer', label: '容器迁移', hasDropdown: false, active: false },
       ]
     },
-    { id: 'crs', icon: 'image', label: '容器镜像服务CRS', hasDropdown: true, active: false },
+    {
+      id: 'crs', icon: 'image', label: '容器镜像服务CRS', hasDropdown: true, active: false,
+      children: [
+        { id: 'image-service', icon: 'image', label: '镜像服务', hasDropdown: false, active: false },
+      ],
+    },
     { id: 'pricing', icon: 'tag', label: '定价和资源包', hasDropdown: false, active: false },
     { id: 'resources', icon: 'grid', label: '资源组详情', hasDropdown: false, active: false },
   ];
-
-  const menuItems = isApplicationContext ? appMenuItems : globalMenuItems;
 
   const toggleMenu = (menuId: string) => {
     setExpandedMenus(prev => {
@@ -457,7 +424,7 @@ export default function Sidebar({ collapsed, onCollapse, activeMenuItem, onMenuI
                       <div key={childIndex} className="relative group">
                         <div
                           onClick={() => handleMenuClick(child.id, false)}
-                          className={`px-4 py-2.5 cursor-pointer flex items-center gap-2.5 transition-colors ${
+                          className={`pl-12 pr-4 py-2.5 cursor-pointer flex items-center gap-2.5 transition-colors ${
                             isChildActive
                               ? 'bg-blue-600 text-white'
                               : 'text-gray-600 hover:bg-gray-50'

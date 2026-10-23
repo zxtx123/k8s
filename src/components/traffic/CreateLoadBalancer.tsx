@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 import { ArrowLeft, Plus, Trash2, Info, HelpCircle } from 'lucide-react';
 
@@ -123,6 +125,7 @@ export default function CreateLoadBalancer({ onBack }: CreateLoadBalancerProps) 
 
   return (
     <div className="h-full flex flex-col">
+      <ResourceBreadcrumb resource="负载均衡" />
       {/* Header */}
       <div className="flex items-center bg-[#F7F8FA] px-6 py-3 border-b border-[#E5E6EB]">
         <button onClick={onBack} className="mr-3 text-[#86909C] hover:text-[#1F2329]">

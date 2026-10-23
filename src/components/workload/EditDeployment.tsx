@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 
 interface EditDeploymentData {
@@ -58,20 +60,7 @@ export default function EditDeployment({ deployment, onBack, onCancel, onSave }:
 
   return (
     <div className="h-full flex flex-col bg-[#F7F9FB]">
-      <div className="h-14 flex items-center justify-between px-5 flex-shrink-0 bg-white border-b border-[#E5E6EB]">
-        <div className="flex items-center text-sm text-[#86909C]">
-          <span className="text-[#165DFF] cursor-pointer hover:text-[#0E4ADB]">stark测试</span>
-          <span className="mx-2">&gt;</span>
-          <span className="text-[#165DFF] cursor-pointer hover:text-[#0E4ADB]">zxtest</span>
-          <span className="mx-2">&gt;</span>
-          <button type="button" onClick={onBack} className="text-[#165DFF] cursor-pointer hover:text-[#0E4ADB]">
-            Deployment
-          </button>
-          <span className="mx-2">&gt;</span>
-          <span className="text-[#1F2329]">编辑Deployment</span>
-        </div>
-        <a href="#" className="text-[#165DFF] text-sm hover:text-[#0E4ADB]">CIS帮助文档</a>
-      </div>
+      <ResourceBreadcrumb resource={<><button type="button" onClick={onBack} className="text-[#0066FF] hover:underline">Deployment</button><span className="text-gray-400">&gt;</span><span>编辑Deployment</span></>} />
 
       <div className="flex-1 overflow-auto px-5 py-4">
         <div className="bg-white border border-[#E5E6EB] rounded-sm min-h-full">

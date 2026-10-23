@@ -34,6 +34,11 @@ import AuditManagement from '@/components/log/AuditManagement';
 import APIKeysManagement from '@/components/api/APIKeysManagement';
 import MemberManagement from '@/components/member/MemberManagement';
 import SettingsManagement from '@/components/settings/SettingsManagement';
+import ProjectManagement, { initialProjects } from '@/components/project/ProjectManagement';
+import ProjectDetail from '@/components/project/ProjectDetail';
+import ImageService from '@/components/crs/ImageService';
+import type { ProjectSwitcherApplication, ProjectSwitcherProject } from '@/components/layout/ProjectSwitcherBreadcrumb';
+import { ProjectBreadcrumbProvider } from '@/components/layout/ProjectSwitcherBreadcrumb';
 
 const applications = [
   {
@@ -170,6 +175,7 @@ const appContextMenuItems = new Set([
   'workload',
   'deployment',
   'statefulset',
+  'daemonset',
   'cronjob',
   'job',
   'traffic',
@@ -194,12 +200,25 @@ const appContextMenuItems = new Set([
 ]);
 
 export default function Page() {
-  const [activeMenuItem, setActiveMenuItem] = useState('app-list');
+  const [activeMenuItem, setActiveMenuItem] = useState('project');
+  const [projects, setProjects] = useState(initialProjects);
+  const [selectedProjectDetailId, setSelectedProjectDetailId] = useState<number | null>(null);
+  const [applicationProjectName, setApplicationProjectName] = useState<string | undefined>();
+  const currentProjectName = projects.find(project => project.name === applicationProjectName)?.name ?? projects[0]?.name ?? '—';
+  const applicationsByProject = useMemo<Record<number, typeof applications>>(() => ({
+    1: applications.slice(0, applications.length / 2),
+    2: applications.slice(applications.length / 2),
+  }), []);
+  const currentProjectId = projects.find(project => project.name === currentProjectName)?.id;
+  const currentProjectApplications = currentProjectId === undefined ? [] : applicationsByProject[currentProjectId] ?? [];
+  const defaultApplicationName = currentProjectApplications[0]?.name ?? '—';
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedApplicationName, setSelectedApplicationName] = useState<string | null>(null);
+  const [currentApplicationName, setCurrentApplicationName] = useState<string | null>(null);
+  const breadcrumbApplicationName = currentProjectApplications.find(app => app.name === currentApplicationName)?.name ?? defaultApplicationName;
   const [selectedClusterName, setSelectedClusterName] = useState<string | null>(null);
   const [selectedDeploymentName, setSelectedDeploymentName] = useState<string | null>(null);
   const [selectedDeploymentId, setSelectedDeploymentId] = useState<number | null>(null);
@@ -223,7 +242,7 @@ export default function Page() {
   const itemsPerPage = 10;
 
   const filteredApplications = useMemo(() => {
-    return applications.filter((app) => {
+    return (currentProjectId === undefined ? [] : applicationsByProject[currentProjectId] ?? []).filter((app) => {
       const keyword = searchTerm.toLowerCase();
       const matchesSearch =
         app.name.toLowerCase().includes(keyword) ||
@@ -233,7 +252,7 @@ export default function Page() {
       if (activeTab === 'favorites') return false;
       return matchesSearch;
     });
-  }, [activeTab, searchTerm]);
+  }, [activeTab, searchTerm, applicationsByProject, currentProjectId]);
 
   const totalPages = Math.max(1, Math.ceil(filteredApplications.length / itemsPerPage));
 
@@ -247,11 +266,14 @@ export default function Page() {
 
   const handleMenuChange = (itemId: string) => {
     setActiveMenuItem(itemId);
+    setSelectedProjectDetailId(null);
     setCurrentPage(1);
     resetCreatePages();
 
     if (itemId === 'app-list') {
       setSelectedApplicationName(null);
+      setSearchTerm('');
+      setActiveTab('all');
     } else if (!appContextMenuItems.has(itemId)) {
       setSelectedApplicationName(null);
     }
@@ -264,12 +286,47 @@ export default function Page() {
     setEditingDeploymentVersion(null);
   };
 
+  const handleProjectChange = (project: ProjectSwitcherProject) => {
+    setApplicationProjectName(project.name);
+    setCurrentApplicationName(null);
+    setSearchTerm('');
+    setActiveTab('all');
+    handleMenuChange('project');
+    setSelectedProjectDetailId(project.id);
+  };
+
+  const handleApplicationChange = (project: ProjectSwitcherProject, application: ProjectSwitcherApplication) => {
+    handleMenuChange('app-list');
+    setApplicationProjectName(project.name);
+    setSelectedApplicationName(application.name);
+    setCurrentApplicationName(application.name);
+    setSearchTerm('');
+    setActiveTab('all');
+  };
+
+  const projectSwitcherProps = {
+    projectName: currentProjectName,
+    applicationName: breadcrumbApplicationName,
+    projects,
+    applicationsByProject,
+    onProjectChange: handleProjectChange,
+    onApplicationChange: handleApplicationChange,
+    onApplicationListClick: () => handleMenuChange('app-list'),
+  };
+
   const renderContent = () => {
+    if (activeMenuItem === 'project' && selectedProjectDetailId !== null) {
+      const project = projects.find(item => item.id === selectedProjectDetailId);
+      if (project) return <ProjectDetail {...projectSwitcherProps} key={project.id} project={project} initialTab="overview" onBack={() => setSelectedProjectDetailId(null)} />;
+    }
+    if (activeMenuItem === 'project') return <ProjectManagement {...projectSwitcherProps} onProjectsChange={setProjects} onViewApplications={project => { handleMenuChange('app-list'); setApplicationProjectName(project.name); setSearchTerm(''); setActiveTab('all'); }} />;
+
     if (activeMenuItem === 'app-list') {
       return selectedApplicationName ? (
-        <ApplicationDetail applicationName={selectedApplicationName} onBack={() => setSelectedApplicationName(null)} />
+        <ApplicationDetail {...projectSwitcherProps} applicationName={selectedApplicationName} onBack={() => setSelectedApplicationName(null)} onViewResource={handleMenuChange} />
       ) : (
         <ApplicationList
+          {...projectSwitcherProps}
           applications={filteredApplications}
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -280,7 +337,7 @@ export default function Page() {
           totalPages={totalPages}
           totalItems={filteredApplications.length}
           itemsPerPage={itemsPerPage}
-          onViewApplication={setSelectedApplicationName}
+          onViewApplication={name => { setSelectedApplicationName(name); setCurrentApplicationName(name); }}
         />
       );
     }
@@ -296,6 +353,7 @@ export default function Page() {
 
       return (
         <ClusterList
+          {...projectSwitcherProps}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           currentPage={currentPage}
@@ -391,6 +449,7 @@ export default function Page() {
     }
 
     if (activeMenuItem === 'statefulset') return <StatefulSetManagement />;
+    if (activeMenuItem === 'daemonset') return <StatefulSetManagement key="daemonset" workloadType="DaemonSet" />;
     if (activeMenuItem === 'cronjob') return <CronJobManagement />;
     if (activeMenuItem === 'job') return <JobManagement />;
 
@@ -421,6 +480,7 @@ export default function Page() {
     if (activeMenuItem === 'pvc') return <PVCManagement />;
     if (activeMenuItem === 'configmap') return <ConfigMapManagement />;
     if (activeMenuItem === 'secret') return <SecretManagement />;
+    if (activeMenuItem === 'image-service') return <ImageService />;
     if (activeMenuItem === 'alert-policy' || activeMenuItem === 'app-alert-policy') return <AlertPolicy />;
     if (activeMenuItem === 'alert-history' || activeMenuItem === 'app-alert-history') return <AlertHistory />;
     if (activeMenuItem === 'event') return <EventManagement />;
@@ -446,9 +506,8 @@ export default function Page() {
           onCollapse={() => setSidebarCollapsed((value) => !value)}
           activeMenuItem={activeMenuItem}
           onMenuItemChange={handleMenuChange}
-          isApplicationContext={Boolean(selectedApplicationName)}
         />
-        <div className="min-w-0 flex-1 overflow-hidden">{renderContent()}</div>
+        <div className="min-w-0 flex-1 overflow-hidden"><ProjectBreadcrumbProvider value={projectSwitcherProps}>{renderContent()}</ProjectBreadcrumbProvider></div>
         <FloatingButtons />
       </div>
     </div>

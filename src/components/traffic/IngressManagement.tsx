@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 
 interface IngressItem {
@@ -57,6 +59,7 @@ export default function IngressManagement({ onCreateIngress }: { onCreateIngress
 
   return (
     <div className="flex flex-col h-full bg-white">
+      <ResourceBreadcrumb resource="Ingress" />
       {/* 顶部操作栏 */}
       <div className="px-6 pt-4 pb-3">
         <div className="flex items-start justify-between">

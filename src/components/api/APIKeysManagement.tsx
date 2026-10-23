@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-export default function APIKeysManagement() {
+export default function APIKeysManagement({ embedded = false, showPlatformAuthorization = true }: { embedded?: boolean; showPlatformAuthorization?: boolean } = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -73,7 +73,7 @@ export default function APIKeysManagement() {
   return (
     <div className="p-5">
       {/* Breadcrumb */}
-      <div className="flex items-center justify-between mb-4">
+      {!embedded && <div className="flex items-center justify-between mb-4">
         <div className="text-sm text-[#86909C]">
           <span>产品团队-专用</span>
           <span className="mx-1">&gt;</span>
@@ -84,7 +84,7 @@ export default function APIKeysManagement() {
         <a href="#" className="text-[#165DFF] text-sm">
           CIS帮助文档
         </a>
-      </div>
+      </div>}
 
       {/* Action bar */}
       <div className="flex items-center justify-between mb-4">
@@ -114,9 +114,9 @@ export default function APIKeysManagement() {
               />
             </svg>
           </div>
-          <button className="border border-[#E5E6EB] rounded px-3 py-1.5 text-sm text-[#1F2329] hover:bg-[#F7F8FA]">
+            {showPlatformAuthorization && <button className="border border-[#E5E6EB] rounded px-3 py-1.5 text-sm text-[#1F2329] hover:bg-[#F7F8FA]">
             授权平台
-          </button>
+            </button>}
           <button className="border border-[#E5E6EB] rounded px-3 py-1.5 text-sm text-[#1F2329] hover:bg-[#F7F8FA]">
             查看OpenAPI
           </button>

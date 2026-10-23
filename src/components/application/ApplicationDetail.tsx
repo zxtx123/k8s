@@ -1,23 +1,35 @@
 'use client';
 
+import { ArrowLeft } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import MemberManagement from '@/components/member/MemberManagement';
+import APIKeysManagement from '@/components/api/APIKeysManagement';
+import ApplicationConfiguration from './ApplicationConfiguration';
+import ProjectClusterUsage, { type ResourceMenuId } from '@/components/project/ProjectClusterUsage';
+import ProjectSwitcherBreadcrumb, { type ProjectSwitcherApplication, type ProjectSwitcherProject } from '@/components/layout/ProjectSwitcherBreadcrumb';
+
+const detailTabs = [
+  { id: 'overview', label: '概览' },
+  { id: 'members', label: '成员管理' },
+  { id: 'apikeys', label: 'APIkeys' },
+  { id: 'config', label: '应用配置' },
+];
+
 interface ApplicationDetailProps {
+  projectName?: string;
+  projects?: ProjectSwitcherProject[];
+  applicationsByProject?: Record<number, ProjectSwitcherApplication[]>;
+  onProjectChange?: (project: ProjectSwitcherProject) => void;
+  onApplicationChange?: (project: ProjectSwitcherProject, application: ProjectSwitcherApplication) => void;
   applicationName: string;
   onBack: () => void;
+  onViewResource: (menuId: ResourceMenuId) => void;
 }
 
-// 资源卡片配置
-interface ResourceCardConfig {
-  type: string;
-  count: number;
-  color: string;
-  bgColor: string;
-  trendColor: string;
-}
-
-export default function ApplicationDetail({ applicationName, onBack }: ApplicationDetailProps) {
+export default function ApplicationDetail({ applicationName, projectName = '默认项目', projects = [{ id: 1, name: '默认项目' }], applicationsByProject = {}, onProjectChange, onApplicationChange, onBack, onViewResource }: ApplicationDetailProps) {
   // 应用基础信息
   const appInfo = {
-    projectName: 'stark测试',
+    projectName,
     name: applicationName,
     appId: '2893',
     creator: 'zhangxing5',
@@ -26,115 +38,26 @@ export default function ApplicationDetail({ applicationName, onBack }: Applicati
     description: 'zx',
   };
 
-  // 集群资源使用统计
-  const clusterResources = [
-    {
-      name: 'SO-SHYC2',
-      cpuUsed: 0,
-      cpuTotal: 0,
-      cpuPercent: 0,
-      memUsed: 0,
-      memTotal: 0,
-      memPercent: 0,
-    },
-    {
-      name: 'ali-alifr',
-      cpuUsed: 0,
-      cpuTotal: 0,
-      cpuPercent: 0,
-      memUsed: 0,
-      memTotal: 0,
-      memPercent: 0,
-    },
-    {
-      name: 'monitor-vpc-docker',
-      cpuUsed: 0,
-      cpuTotal: 0,
-      cpuPercent: 0,
-      memUsed: 0,
-      memTotal: 0,
-      memPercent: 0,
-    },
-    {
-      name: 'pub-alisg',
-      cpuUsed: 0,
-      cpuTotal: 0,
-      cpuPercent: 0,
-      memUsed: 0,
-      memTotal: 0,
-      memPercent: 0,
-    },
-  ];
-
-  // Kubernetes资源统计 - 带配色和趋势数据
-  const k8sResources: ResourceCardConfig[] = [
-    { type: 'Deployment', count: 11, color: '#3B82F6', bgColor: '#EFF6FF', trendColor: '#3B82F6' },
-    { type: 'StatefulSet', count: 2, color: '#06B6D4', bgColor: '#ECFEFF', trendColor: '#06B6D4' },
-    { type: 'DaemonSet', count: 0, color: '#8B5CF6', bgColor: '#F5F3FF', trendColor: '#8B5CF6' },
-    { type: 'CronJob', count: 1, color: '#EC4899', bgColor: '#FDF2F8', trendColor: '#EC4899' },
-    { type: 'Job', count: 1, color: '#F59E0B', bgColor: '#FFFBEB', trendColor: '#F59E0B' },
-    { type: 'Service', count: 2, color: '#10B981', bgColor: '#ECFDF5', trendColor: '#10B981' },
-    { type: 'Ingress', count: 0, color: '#6366F1', bgColor: '#EEF2FF', trendColor: '#6366F1' },
-    { type: '负载均衡', count: 2, color: '#14B8A6', bgColor: '#F0FDFA', trendColor: '#14B8A6' },
-    { type: 'PVC', count: 3, color: '#F97316', bgColor: '#FFF7ED', trendColor: '#F97316' },
-  ];
-
-  // 简单的趋势图SVG路径生成
-  const generateTrendPath = (count: number): string => {
-    // 基于count生成一个模拟的趋势线
-    const baseHeight = 20;
-    const width = 80;
-    const points: string[] = [];
-    
-    for (let i = 0; i <= 8; i++) {
-      const x = (i / 8) * width;
-      const variance = Math.sin(i * 0.8) * 8;
-      const y = baseHeight - (count > 0 ? Math.min(count, 10) * 1.5 + variance : variance);
-      points.push(`${i === 0 ? 'M' : 'L'} ${x} ${y}`);
-    }
-    
-    return points.join(' ');
-  };
-
-  // 生成填充区域路径
-  const generateAreaPath = (count: number): string => {
-    const linePath = generateTrendPath(count);
-    return `${linePath} L 80 20 L 0 20 Z`;
-  };
-
   return (
-    <div className="min-h-full bg-gray-50">
+    <div className="flex h-full flex-col bg-gray-50">
       {/* 面包屑导航 */}
-      <div className="flex items-center justify-between h-14 px-6 text-sm text-gray-600 bg-white border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <span>{appInfo.projectName}</span>
-          <span className="text-gray-400">{'>'}</span>
-          <button 
-            onClick={onBack}
-            className="text-blue-600 hover:text-blue-700 hover:underline"
-          >
-            {appInfo.name}
-          </button>
-          <span className="text-gray-400">{'>'}</span>
-          <span className="text-gray-900 font-medium">应用概览</span>
-        </div>
-        <a href="#" className="text-blue-600 hover:underline">
-          CIS帮助文档
-        </a>
-      </div>
+      <ProjectSwitcherBreadcrumb projectName={appInfo.projectName} projects={projects} applicationsByProject={applicationsByProject} onProjectChange={onProjectChange} onApplicationChange={onApplicationChange} suffix={<><span className="text-gray-400">{'>'}</span><button onClick={onBack} className="text-[#202020] hover:underline">应用</button><span className="text-gray-400">{'>'}</span><span className="font-medium text-gray-900">{appInfo.name}</span></>} />
 
+      <div className="flex shrink-0 items-center gap-3 bg-white px-6 py-5"><button aria-label="返回应用列表" onClick={onBack} className="cursor-pointer text-[#63748A] hover:text-[#0066FF]"><ArrowLeft className="h-5 w-5" /></button><h1 className="text-lg font-medium">{appInfo.name}</h1><span className="rounded-sm bg-[#EEF6FF] px-2 py-1 text-xs text-[#0066FF]">应用</span></div>
+      <Tabs defaultValue="overview" className="min-h-0 flex-1 gap-0">
+        <div className="shrink-0 overflow-x-auto border-b border-[#E6E6E6] bg-white px-6">
+          <TabsList aria-label="应用详情" className="h-11 w-max justify-start gap-7 rounded-none bg-white p-0">
+            {detailTabs.map(tab => <TabsTrigger key={tab.id} value={tab.id} className="h-11 flex-none cursor-pointer rounded-none border-0 border-b-2 border-transparent px-1 text-[#666666] data-[state=active]:border-[#0066FF] data-[state=active]:text-[#0066FF] data-[state=active]:shadow-none">{tab.label}</TabsTrigger>)}
+          </TabsList>
+        </div>
       {/* 内容区域 */}
-      <div className="p-6 space-y-6">
+      <TabsContent value="overview" className="min-h-0 overflow-auto p-6 space-y-6">
         {/* 应用基础信息 */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-base font-medium text-gray-900 mb-4">应用基础信息</h2>
-          <div className="grid grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 2xl:grid-cols-3">
             <div className="flex">
-              <span className="text-sm text-gray-500 w-24 flex-shrink-0">项目名称:</span>
-              <span className="text-sm text-gray-900">{appInfo.projectName}</span>
-            </div>
-            <div className="flex">
-              <span className="text-sm text-gray-500 w-24 flex-shrink-0">名称:</span>
+              <span className="text-sm text-gray-500 w-24 flex-shrink-0">应用名称:</span>
               <span className="text-sm text-gray-900">{appInfo.name}</span>
             </div>
             <div className="flex">
@@ -142,15 +65,19 @@ export default function ApplicationDetail({ applicationName, onBack }: Applicati
               <span className="text-sm text-gray-900">{appInfo.appId}</span>
             </div>
             <div className="flex">
+              <span className="text-sm text-gray-500 w-24 flex-shrink-0">所属项目:</span>
+              <span className="text-sm text-gray-900">{appInfo.projectName}</span>
+            </div>
+            <div className="flex">
               <span className="text-sm text-gray-500 w-24 flex-shrink-0">创建者:</span>
               <span className="text-sm text-gray-900">{appInfo.creator}</span>
             </div>
-            <div className="flex">
+            <div className="flex min-w-0">
               <span className="text-sm text-gray-500 w-24 flex-shrink-0">创建时间:</span>
-              <span className="text-sm text-gray-900">{appInfo.createTime}</span>
+              <span className="whitespace-nowrap text-sm text-gray-900">{appInfo.createTime}</span>
             </div>
             <div className="flex">
-              <span className="text-sm text-gray-500 w-24 flex-shrink-0">关联应用:</span>
+              <span className="whitespace-nowrap text-sm text-gray-500 w-24 flex-shrink-0">关联HULK项目:</span>
               <span className="text-sm text-gray-900">{appInfo.relatedApp}</span>
             </div>
             <div className="flex items-center">
@@ -165,106 +92,12 @@ export default function ApplicationDetail({ applicationName, onBack }: Applicati
           </div>
         </div>
 
-        {/* 集群资源使用统计 */}
-        <div>
-          <h2 className="text-base font-medium text-gray-900 mb-4">集群资源使用统计</h2>
-          <div className="grid grid-cols-4 gap-4">
-            {clusterResources.map((cluster, index) => (
-              <div key={index} className="bg-white rounded-lg border border-gray-200 p-4">
-                <div className="text-sm font-medium text-gray-900 mb-4">{cluster.name}</div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span>CPU使用</span>
-                      <span>{cluster.cpuUsed} / {cluster.cpuTotal} ({cluster.cpuPercent}%)</span>
-                    </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 rounded-full"
-                        style={{ width: `${cluster.cpuPercent}%` }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span>内存使用</span>
-                      <span>{cluster.memUsed} / {cluster.memTotal} ({cluster.memPercent}%)</span>
-                    </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 rounded-full"
-                        style={{ width: `${cluster.memPercent}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <button className="mt-4 text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                  展开
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Kubernetes资源统计 */}
-        <div>
-          <h2 className="text-base font-medium text-gray-900 mb-4">Kubernetes资源统计</h2>
-          <div className="grid grid-cols-4 gap-4">
-            {k8sResources.map((resource, index) => (
-              <div 
-                key={index} 
-                className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow"
-              >
-                {/* 资源名称 */}
-                <div className="text-sm text-gray-600 mb-2">{resource.type}</div>
-                
-                {/* 核心数值 */}
-                <div className="text-4xl font-bold text-gray-900 mb-3" style={{ color: resource.color }}>
-                  {resource.count}
-                </div>
-                
-                {/* 趋势图 */}
-                <div className="h-12 relative">
-                  <svg width="100%" height="48" viewBox="0 0 80 20" preserveAspectRatio="none">
-                    {/* 渐变填充 */}
-                    <defs>
-                      <linearGradient id={`gradient-${index}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor={resource.trendColor} stopOpacity="0.3" />
-                        <stop offset="100%" stopColor={resource.trendColor} stopOpacity="0.05" />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      d={generateAreaPath(resource.count)}
-                      fill={`url(#gradient-${index})`}
-                    />
-                    <path
-                      d={generateTrendPath(resource.count)}
-                      fill="none"
-                      stroke={resource.trendColor}
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    {/* 末端圆点 */}
-                    <circle
-                      cx="80"
-                      cy={20 - (resource.count > 0 ? Math.min(resource.count, 10) * 1.5 : 0)}
-                      r="2.5"
-                      fill={resource.trendColor}
-                    />
-                  </svg>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        <ProjectClusterUsage onViewResource={onViewResource} />
+      </TabsContent>
+      <TabsContent value="members" className="min-h-0 overflow-auto"><MemberManagement embedded scope="application" /></TabsContent>
+      <TabsContent value="apikeys" className="min-h-0 overflow-auto"><APIKeysManagement embedded showPlatformAuthorization={false} /></TabsContent>
+      <TabsContent value="config" className="min-h-0 overflow-auto"><ApplicationConfiguration /></TabsContent>
+      </Tabs>
     </div>
   );
 }

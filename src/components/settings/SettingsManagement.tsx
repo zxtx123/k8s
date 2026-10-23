@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-export default function SettingsManagement() {
+export default function SettingsManagement({ embedded = false }: { embedded?: boolean } = {}) {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     cpuLimitDefault: '9',
@@ -20,7 +20,7 @@ export default function SettingsManagement() {
   return (
     <div className="p-5">
       {/* Breadcrumb */}
-      <div className="flex items-center justify-between mb-4">
+      {!embedded && <div className="flex items-center justify-between mb-4">
         <div className="flex items-center text-sm text-[#8C9AAE]">
           <span className="cursor-pointer hover:text-[#165DFF]">产品团队-专用</span>
           <span className="mx-1.5">&gt;</span>
@@ -29,7 +29,7 @@ export default function SettingsManagement() {
           <span className="text-[#1F2329]">设置</span>
         </div>
         <a href="#" className="text-sm text-[#165DFF]">CIS帮助文档</a>
-      </div>
+      </div>}
 
       {/* Tabs */}
       <div className="flex items-center justify-between border-b border-[#E5E6EB] mb-5">

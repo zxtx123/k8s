@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 
 const mockData = [
@@ -26,18 +28,7 @@ export default function CronJobManagement() {
   return (
     <div className="flex flex-col h-full">
       {/* 面包屑导航 */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-[#E5E6EB]">
-        <div className="text-sm text-[#86909C]">
-          <span>stark测试</span>
-          <span className="mx-1">&gt;</span>
-          <span>zxtest</span>
-          <span className="mx-1">&gt;</span>
-          <span className="text-[#1F2329]">CronJob</span>
-        </div>
-        <a href="#" className="text-sm text-[#165DFF]">
-          CIS帮助文档
-        </a>
-      </div>
+      <ResourceBreadcrumb resource="CronJob" />
 
       {/* 操作栏 */}
       <div className="flex items-center justify-between px-6 py-3 bg-[#F7F8FA] border-b border-[#E5E6EB]">

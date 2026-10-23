@@ -22,19 +22,34 @@ const memberData: Member[] = [
   { id: 10, userName: 'j-zhangcheng-jk', groups: ['项目成员'], createTime: '2025-09-12 09:30:00' },
 ];
 
-export default function MemberManagement() {
+// 应用成员列表的示例群组，仅用于页面展示。
+const applicationGroups = [
+  ['应用管理员'],
+  ['应用管理员', '应用开发'],
+  ['应用开发'],
+  ['应用测试'],
+  ['应用运维'],
+  ['应用开发'],
+  ['应用测试'],
+  ['应用运维'],
+  ['应用开发', '应用测试'],
+  ['应用运维'],
+];
+const applicationMemberData = memberData.map((member, index) => ({ ...member, groups: applicationGroups[index] }));
+
+export default function MemberManagement({ embedded = false, scope = 'project' }: { embedded?: boolean; scope?: 'project' | 'application' } = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = 5;
 
-  const filteredData = memberData.filter(item =>
+  const filteredData = (scope === 'application' ? applicationMemberData : memberData).filter(item =>
     item.userName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="p-5">
       {/* Breadcrumb */}
-      <div className="flex items-center justify-between mb-4">
+      {!embedded && <div className="flex items-center justify-between mb-4">
         <div className="flex items-center text-sm text-[#86909C]">
           <span className="cursor-pointer hover:text-[#165DFF]">产品团队-专用</span>
           <span className="mx-2">&gt;</span>
@@ -43,12 +58,12 @@ export default function MemberManagement() {
           <span className="text-[#1F2329]">成员管理</span>
         </div>
         <a href="#" className="text-[#165DFF] text-sm hover:underline">CIS帮助文档</a>
-      </div>
+      </div>}
 
       {/* Action Bar */}
       <div className="flex items-center justify-between mb-4">
         <button className="h-8 px-4 bg-[#165DFF] text-white text-sm rounded hover:bg-[#0E42D2] flex items-center">
-          <span className="mr-1">+</span> 关联项目用户
+          <span className="mr-1">+</span> {scope === 'application' ? '关联应用用户' : '关联项目用户'}
         </button>
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -63,9 +78,9 @@ export default function MemberManagement() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <button className="h-8 px-3 text-sm border border-[#E5E6EB] rounded text-[#1F2329] hover:bg-[#F2F3F5]">
+          {scope === 'project' && <button className="h-8 px-3 text-sm border border-[#E5E6EB] rounded text-[#1F2329] hover:bg-[#F2F3F5]">
             批量关联应用
-          </button>
+          </button>}
           <button className="w-8 h-8 flex items-center justify-center border border-[#E5E6EB] rounded text-[#86909C] hover:bg-[#F2F3F5]">
             <span className="text-sm font-bold">C</span>
           </button>
@@ -93,7 +108,7 @@ export default function MemberManagement() {
                       <span
                         key={idx}
                         className={`inline-block px-2 py-0.5 text-xs rounded ${
-                          group === '项目管理员'
+                          group === '项目管理员' || group === '应用管理员'
                             ? 'bg-[#EEF6FF] text-[#165DFF]'
                             : 'bg-[#F2F3F5] text-[#86909C]'
                         }`}

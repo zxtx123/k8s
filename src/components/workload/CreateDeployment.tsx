@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 
 interface DeploymentInitialData {
@@ -168,16 +170,7 @@ export default function CreateDeployment({ mode = 'create', initialData, onBack,
   return (
     <div className="h-full flex flex-col">
       {/* 面包屑 + 帮助 */}
-      <div className="h-14 flex items-center justify-between px-5 border-b border-[#E6E6E6] flex-shrink-0">
-        <div className="flex items-center text-sm text-[#666666]">
-          <span className="text-[#0066FF] cursor-pointer hover:underline">stark测试</span>
-          <span className="mx-2">&gt;</span>
-          <span className="text-[#0066FF] cursor-pointer hover:underline">zxtest</span>
-          <span className="mx-2">&gt;</span>
-          <span className="text-[#0066FF] cursor-pointer hover:underline">Deployment</span>
-        </div>
-        <a href="#" className="text-[#0066FF] text-sm hover:underline">CIS帮助文档</a>
-      </div>
+      <ResourceBreadcrumb resource="Deployment" />
 
       {/* 内容区 */}
       <div className="flex-1 overflow-auto px-5 py-4">

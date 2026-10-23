@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 
 interface AccessRule {
@@ -38,6 +40,7 @@ export default function CreateIngress({ onCancel }: { onCancel: () => void }) {
 
   return (
     <div className="flex flex-col h-full bg-white">
+      <ResourceBreadcrumb resource="Ingress" />
       {/* 头部 */}
       <div className="px-6 py-4 border-b border-[#E5E6EB]">
         <div className="flex items-center gap-3">

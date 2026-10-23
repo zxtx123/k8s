@@ -1,5 +1,7 @@
 'use client';
 
+import ProjectSwitcherBreadcrumb, { type ProjectSwitcherApplication, type ProjectSwitcherProject } from '@/components/layout/ProjectSwitcherBreadcrumb';
+
 interface Application {
   id: number;
   name: string;
@@ -11,6 +13,13 @@ interface Application {
 }
 
 interface ApplicationListProps {
+  projectName?: string;
+  applicationName?: string;
+  projects?: ProjectSwitcherProject[];
+  applicationsByProject?: Record<number, ProjectSwitcherApplication[]>;
+  onProjectChange?: (project: ProjectSwitcherProject) => void;
+  onApplicationChange?: (project: ProjectSwitcherProject, application: ProjectSwitcherApplication) => void;
+  onApplicationListClick?: () => void;
   applications: Application[];
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -25,6 +34,13 @@ interface ApplicationListProps {
 }
 
 export default function ApplicationList({
+  projectName = '默认项目',
+  applicationName,
+  projects = [{ id: 1, name: '默认项目' }],
+  applicationsByProject = {},
+  onProjectChange,
+  onApplicationChange,
+  onApplicationListClick,
   applications,
   activeTab,
   onTabChange,
@@ -44,18 +60,7 @@ export default function ApplicationList({
   return (
     <div className="h-full flex flex-col">
       {/* 面包屑导航区域 */}
-      <div className="flex items-center justify-between h-14 px-6 text-sm text-gray-600 bg-white border-b border-gray-200 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <span>产品团队-专用</span>
-          <span className="text-gray-400">{'>'}</span>
-          <span>stark测试</span>
-          <span className="text-gray-400">{'>'}</span>
-          <span className="text-gray-900 font-medium">应用列表</span>
-        </div>
-        <a href="#" className="text-blue-600 hover:underline">
-          CIS帮助文档
-        </a>
-      </div>
+      <ProjectSwitcherBreadcrumb projectName={projectName} applicationName={applicationName} projects={projects} applicationsByProject={applicationsByProject} onProjectChange={onProjectChange} onApplicationChange={onApplicationChange} onApplicationListClick={onApplicationListClick} />
 
       {/* 内容区域 */}
       <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">
@@ -146,18 +151,18 @@ export default function ApplicationList({
                     <td className="px-4 py-3 text-gray-600">{app.creator}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button className="text-gray-600 hover:text-blue-600 text-sm">
+                        <button className="cursor-pointer text-[#0066FF] hover:underline text-sm">
                           收藏
                         </button>
                         <span className="text-gray-300">|</span>
-                        <button className="text-gray-600 hover:text-blue-600 text-sm">
+                        <button onClick={() => onViewApplication?.(app.name)} aria-label={`查看应用 ${app.name} 详情`} className="cursor-pointer text-[#0066FF] hover:underline text-sm">
                           详情
                         </button>
                         <span className="text-gray-300">|</span>
-                        <button className="text-gray-600 hover:text-blue-600 text-sm">
+                        <button className="cursor-pointer text-[#0066FF] hover:underline text-sm">
                           编辑
                         </button>
-                        <button className="text-gray-400 hover:text-gray-600 p-1">
+                        <button className="cursor-pointer text-[#0066FF] p-1">
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                           </svg>

@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 import { ChevronLeft, Plus, X, HelpCircle } from 'lucide-react';
 
@@ -107,6 +109,7 @@ export default function CreateService({ onCancel }: CreateServiceProps) {
 
   return (
     <div className="flex flex-col h-full bg-white">
+      <ResourceBreadcrumb resource="Service" />
       {/* Header */}
       <div className="flex items-center px-6 py-3 border-b border-[#E5E6EB]">
         <button

@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 
 interface DeploymentDetailProps {
@@ -238,18 +240,7 @@ export default function DeploymentDetail({ deploymentName, deploymentId, onBack,
   return (
     <div className="h-full flex flex-col bg-[#F0F5F7]">
       {/* 面包屑导航 */}
-      <div className="h-14 flex items-center justify-between px-5 flex-shrink-0 bg-white border-b border-gray-200">
-        <div className="flex items-center text-sm text-gray-500">
-          <span className="text-blue-500 cursor-pointer hover:text-blue-600">stark测试</span>
-          <span className="mx-2">&gt;</span>
-          <span className="text-blue-500 cursor-pointer hover:text-blue-600">zxtest</span>
-          <span className="mx-2">&gt;</span>
-          <button type="button" onClick={onBack} className="text-blue-500 cursor-pointer hover:text-blue-600">Deployment</button>
-          <span className="mx-2">&gt;</span>
-          <span className="text-gray-800">版本列表</span>
-        </div>
-        <a href="#" className="text-blue-500 text-sm hover:text-blue-600">CIS帮助文档</a>
-      </div>
+      <ResourceBreadcrumb resource={<><button type="button" onClick={onBack} className="text-[#0066FF] hover:underline">Deployment</button><span className="text-gray-400">&gt;</span><span>版本列表</span></>} />
 
       {/* 内容区域 */}
       <div className="flex-1 overflow-auto p-5 space-y-4">

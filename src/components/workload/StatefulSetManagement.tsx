@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 
 const mockData = [
@@ -21,11 +23,11 @@ const mockData = [
   },
 ];
 
-export default function StatefulSetManagement() {
+export default function StatefulSetManagement({ workloadType = 'StatefulSet' }: { workloadType?: 'StatefulSet' | 'DaemonSet' } = {}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredData = mockData.filter(
+  const filteredData = (workloadType === 'StatefulSet' ? mockData : []).filter(
     (item) =>
       searchTerm === '' ||
       String(item.id).includes(searchTerm) ||
@@ -35,24 +37,13 @@ export default function StatefulSetManagement() {
   return (
     <div className="flex flex-col h-full">
       {/* 面包屑导航 */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-[#E5E6EB]">
-        <div className="text-sm text-[#86909C]">
-          <span>stark测试</span>
-          <span className="mx-1">&gt;</span>
-          <span>zxtest</span>
-          <span className="mx-1">&gt;</span>
-          <span className="text-[#1F2329]">StatefulSet</span>
-        </div>
-        <a href="#" className="text-sm text-[#165DFF]">
-          CIS帮助文档
-        </a>
-      </div>
+      <ResourceBreadcrumb resource={workloadType} />
 
       {/* 操作栏 */}
       <div className="flex items-center justify-between px-6 py-3 bg-[#F7F8FA] border-b border-[#E5E6EB]">
         <button className="px-4 py-1.5 bg-[#165DFF] text-white text-sm rounded hover:bg-[#0E4ADB] flex items-center gap-1">
           <span>+</span>
-          创建StatefulSet
+          创建{workloadType}
         </button>
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -91,6 +82,7 @@ export default function StatefulSetManagement() {
               </tr>
             </thead>
             <tbody>
+              {!filteredData.length && <tr><td colSpan={7} className="px-4 py-12 text-center text-[#86909C]">暂无{workloadType}记录</td></tr>}
               {filteredData.map((item) => (
                 <tr key={item.id} className="border-t border-[#E5E6EB] hover:bg-[#F7F8FA]">
                   <td className="px-4 py-3 text-[#1F2329]">{item.id}</td>

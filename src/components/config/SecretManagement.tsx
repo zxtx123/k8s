@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 
 interface SecretManagementProps {
@@ -28,10 +30,7 @@ export default function SecretManagement({ onMenuItemChange }: SecretManagementP
   return (
     <div className="flex flex-col h-full">
       {/* Breadcrumb */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#E5E6EB]">
-        <span className="text-sm text-[#86909C]">stark测试 &gt; zxtest &gt; Secret</span>
-        <span className="text-sm text-[#165DFF] cursor-pointer">CIS帮助文档</span>
-      </div>
+      <ResourceBreadcrumb resource="Secret" />
 
       {/* Action Bar */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#F7F8FA] border-b border-[#E5E6EB]">

@@ -1,5 +1,7 @@
 'use client';
 
+import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+
 import { useState } from 'react';
 
 interface ServiceItem {
@@ -58,18 +60,7 @@ export default function ServiceManagement({ onCreateService }: { onCreateService
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Breadcrumb */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-[#E5E6EB]">
-        <div className="flex items-center text-sm text-[#86909C]">
-          <span>stark测试</span>
-          <span className="mx-2">&gt;</span>
-          <span>zxtest</span>
-          <span className="mx-2">&gt;</span>
-          <span className="text-[#1F2329]">Service</span>
-        </div>
-        <a href="#" className="text-xs text-[#165DFF]">
-          CIS帮助文档
-        </a>
-      </div>
+      <ResourceBreadcrumb resource="Service" />
 
       {/* Action bar */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-[#E5E6EB] bg-[#F7F8FA]">
