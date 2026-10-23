@@ -217,6 +217,7 @@ export default function Page() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedApplicationName, setSelectedApplicationName] = useState<string | null>(null);
+  const [applicationDetailInitialTab, setApplicationDetailInitialTab] = useState<'overview' | 'members'>('overview');
   const [currentApplicationName, setCurrentApplicationName] = useState<string | null>(null);
   const breadcrumbApplicationName = currentProjectApplications.find(app => app.name === currentApplicationName)?.name ?? defaultApplicationName;
   const [selectedClusterName, setSelectedClusterName] = useState<string | null>(null);
@@ -299,6 +300,7 @@ export default function Page() {
     handleMenuChange('app-list');
     setApplicationProjectName(project.name);
     setSelectedApplicationName(application.name);
+    setApplicationDetailInitialTab('overview');
     setCurrentApplicationName(application.name);
     setSearchTerm('');
     setActiveTab('all');
@@ -323,7 +325,7 @@ export default function Page() {
 
     if (activeMenuItem === 'app-list') {
       return selectedApplicationName ? (
-        <ApplicationDetail {...projectSwitcherProps} applicationName={selectedApplicationName} onBack={() => setSelectedApplicationName(null)} onViewResource={handleMenuChange} />
+        <ApplicationDetail {...projectSwitcherProps} key={`${selectedApplicationName}-${applicationDetailInitialTab}`} applicationName={selectedApplicationName} initialTab={applicationDetailInitialTab} onBack={() => setSelectedApplicationName(null)} onViewResource={handleMenuChange} />
       ) : (
         <ApplicationList
           {...projectSwitcherProps}
@@ -337,7 +339,7 @@ export default function Page() {
           totalPages={totalPages}
           totalItems={filteredApplications.length}
           itemsPerPage={itemsPerPage}
-          onViewApplication={name => { setSelectedApplicationName(name); setCurrentApplicationName(name); }}
+          onViewApplication={(name, initialTab = 'overview') => { setSelectedApplicationName(name); setCurrentApplicationName(name); setApplicationDetailInitialTab(initialTab); }}
         />
       );
     }

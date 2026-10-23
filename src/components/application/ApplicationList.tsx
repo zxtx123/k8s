@@ -1,6 +1,7 @@
 'use client';
 
 import ProjectSwitcherBreadcrumb, { type ProjectSwitcherApplication, type ProjectSwitcherProject } from '@/components/layout/ProjectSwitcherBreadcrumb';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 interface Application {
   id: number;
@@ -30,7 +31,7 @@ interface ApplicationListProps {
   totalPages: number;
   totalItems: number;
   itemsPerPage: number;
-  onViewApplication?: (appName: string) => void;
+  onViewApplication?: (appName: string, initialTab?: 'overview' | 'members') => void;
 }
 
 export default function ApplicationList({
@@ -150,23 +151,28 @@ export default function ApplicationList({
                     <td className="px-4 py-3 text-gray-600">{app.createTime}</td>
                     <td className="px-4 py-3 text-gray-600">{app.creator}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 whitespace-nowrap">
                         <button className="cursor-pointer text-[#0066FF] hover:underline text-sm">
-                          收藏
+                          编辑
                         </button>
                         <span className="text-gray-300">|</span>
                         <button onClick={() => onViewApplication?.(app.name)} aria-label={`查看应用 ${app.name} 详情`} className="cursor-pointer text-[#0066FF] hover:underline text-sm">
                           详情
                         </button>
                         <span className="text-gray-300">|</span>
-                        <button className="cursor-pointer text-[#0066FF] hover:underline text-sm">
-                          编辑
+                        <button onClick={() => onViewApplication?.(app.name, 'members')} aria-label={`管理应用 ${app.name} 成员`} className="cursor-pointer text-[#0066FF] hover:underline text-sm">
+                          成员
                         </button>
-                        <button className="cursor-pointer text-[#0066FF] p-1">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild><button aria-label={`应用 ${app.name} 更多操作`} className="cursor-pointer text-[#0066FF] p-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                           </svg>
-                        </button>
+                        </button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded border-[#D8E0E8]">
+                          <DropdownMenuItem className="cursor-pointer">收藏</DropdownMenuItem>
+                        </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>
