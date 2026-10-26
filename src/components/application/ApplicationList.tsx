@@ -36,12 +36,10 @@ interface ApplicationListProps {
 
 export default function ApplicationList({
   projectName = '默认项目',
-  applicationName,
   projects = [{ id: 1, name: '默认项目' }],
   applicationsByProject = {},
   onProjectChange,
   onApplicationChange,
-  onApplicationListClick,
   applications,
   activeTab,
   onTabChange,
@@ -61,7 +59,7 @@ export default function ApplicationList({
   return (
     <div className="h-full flex flex-col">
       {/* 面包屑导航区域 */}
-      <ProjectSwitcherBreadcrumb projectName={projectName} applicationName={applicationName} projects={projects} applicationsByProject={applicationsByProject} onProjectChange={onProjectChange} onApplicationChange={onApplicationChange} onApplicationListClick={onApplicationListClick} />
+      <ProjectSwitcherBreadcrumb projectName={projectName} projects={projects} applicationsByProject={applicationsByProject} onProjectChange={onProjectChange} onApplicationChange={onApplicationChange} suffix={<><span className="text-gray-400">&gt;</span><span className="font-medium text-[#202020]">应用列表</span></>} />
 
       {/* 内容区域 */}
       <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden">

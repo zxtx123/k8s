@@ -9,8 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogDescription, AlertDialogFooter, AlertDialogOverlay, AlertDialogPortal, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import ProjectForm, { type ProjectConfiguration } from './ProjectForm';
 import ProjectDetail from './ProjectDetail';
-import { type ProjectSwitcherApplication, type ProjectSwitcherProject } from '@/components/layout/ProjectSwitcherBreadcrumb';
-import ResourceBreadcrumb from '@/components/layout/ResourceBreadcrumb';
+import ProjectSwitcherBreadcrumb, { useProjectBreadcrumb, type ProjectSwitcherApplication, type ProjectSwitcherProject } from '@/components/layout/ProjectSwitcherBreadcrumb';
 
 export interface Project {
   id: number;
@@ -32,12 +31,13 @@ interface ProjectManagementProps {
   projects: Project[];
   applicationsByProject?: Record<number, ProjectSwitcherApplication[]>;
   onProjectsChange: (projects: Project[]) => void;
-  onViewApplications: (project: Project) => void;
+  onViewProject: (project: Project) => void;
   onProjectChange?: (project: ProjectSwitcherProject) => void;
   onApplicationChange?: (project: ProjectSwitcherProject, application: ProjectSwitcherApplication) => void;
 }
 
-export default function ProjectManagement({ projects, applicationsByProject = {}, onProjectsChange, onViewApplications, onProjectChange, onApplicationChange }: ProjectManagementProps) {
+export default function ProjectManagement({ projectName, projects, applicationsByProject = {}, onProjectsChange, onViewProject, onProjectChange, onApplicationChange }: ProjectManagementProps) {
+  const breadcrumbContext = useProjectBreadcrumb();
   const [search, setSearch] = useState('');
   const [form, setForm] = useState<{ project?: Project } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
@@ -75,7 +75,7 @@ export default function ProjectManagement({ projects, applicationsByProject = {}
 
   return (
     <div className="flex h-full flex-col bg-[#F0F5F7] text-sm text-[#202020]">
-      <ResourceBreadcrumb />
+      <ProjectSwitcherBreadcrumb projectName={projectName} projects={projects} applicationsByProject={applicationsByProject} onProjectChange={breadcrumbContext?.onProjectChange ?? onProjectChange} onApplicationChange={breadcrumbContext?.onApplicationChange ?? onApplicationChange} />
       <div className="m-3 flex min-h-0 flex-1 flex-col bg-white">
         <div className="flex shrink-0 flex-wrap items-center gap-4 border-b border-[#E6E6E6] px-4 py-4">
           <Button onClick={() => setForm({})} className="h-10 rounded bg-[#0066FF] px-4 hover:bg-[#0052CC]"><Plus />创建项目</Button>
@@ -92,7 +92,7 @@ export default function ProjectManagement({ projects, applicationsByProject = {}
             <tbody>
               {visibleProjects.map(project => (
                 <tr key={project.id} className="border-b border-[#D8E0E8] hover:bg-gray-50">
-                  <td className="px-3 py-3"><button onClick={() => onViewApplications(project)} className="cursor-pointer text-[#0066FF] hover:underline" aria-label={`查看项目 ${project.name} 的应用列表`}>{project.name}</button></td><td className="px-3 py-3">{project.namespace}</td><td className="px-3 py-3">{project.creator}</td><td className="whitespace-nowrap px-3 py-3">{project.createTime}</td>
+                  <td className="px-3 py-3"><button onClick={() => onViewProject(project)} className="cursor-pointer text-[#0066FF] hover:underline" aria-label={`打开项目 ${project.name} 详情`}>{project.name}</button></td><td className="px-3 py-3">{project.namespace}</td><td className="px-3 py-3">{project.creator}</td><td className="whitespace-nowrap px-3 py-3">{project.createTime}</td>
                   <td className="whitespace-nowrap px-3 py-3">
                     <div className="flex items-center gap-4">
                       <button onClick={() => { setDetailInitialTab('overview'); setDetailProjectId(project.id); }} className="cursor-pointer text-[#0066FF] hover:underline" aria-label={`查看项目 ${project.name} 详情`}>详情</button>

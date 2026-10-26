@@ -306,6 +306,19 @@ export default function Page() {
     setActiveTab('all');
   };
 
+  const handleApplicationDetailProjectChange = (project: ProjectSwitcherProject) => {
+    const nextApplication = (applicationsByProject[project.id] ?? [])[0];
+    setApplicationProjectName(project.name);
+    setCurrentApplicationName(nextApplication?.name ?? null);
+    setSelectedApplicationName(nextApplication?.name ?? '—');
+  };
+
+  const handleApplicationDetailChange = (project: ProjectSwitcherProject, application: ProjectSwitcherApplication) => {
+    setApplicationProjectName(project.name);
+    setCurrentApplicationName(application.name);
+    setSelectedApplicationName(application.name);
+  };
+
   const projectSwitcherProps = {
     projectName: currentProjectName,
     applicationName: breadcrumbApplicationName,
@@ -316,19 +329,43 @@ export default function Page() {
     onApplicationListClick: () => handleMenuChange('app-list'),
   };
 
+  const listProjectSwitcherProps = {
+    ...projectSwitcherProps,
+    onProjectChange: (project: ProjectSwitcherProject) => {
+      setApplicationProjectName(project.name);
+      setCurrentApplicationName(null);
+    },
+    onApplicationChange: (project: ProjectSwitcherProject, application: ProjectSwitcherApplication) => {
+      if (['project', 'cluster', 'app-list'].includes(activeMenuItem)) {
+        handleApplicationChange(project, application);
+        return;
+      }
+      setApplicationProjectName(project.name);
+      setCurrentApplicationName(application.name);
+    },
+  };
+
+  const isResourceListPage = [
+    'deployment', 'statefulset', 'daemonset', 'cronjob', 'job',
+    'service', 'ingress', 'loadbalancer', 'configmap', 'secret', 'pvc',
+    'alert-policy', 'app-alert-policy', 'alert-history', 'app-alert-history', 'event', 'audit',
+    'image-service',
+  ].includes(activeMenuItem) && !selectedDeploymentName && !editingDeployment && !editingDeploymentVersion
+    && !showCreateDeployment && !showCreateService && !showCreateIngress && !showCreateLoadBalancer;
+
   const renderContent = () => {
     if (activeMenuItem === 'project' && selectedProjectDetailId !== null) {
       const project = projects.find(item => item.id === selectedProjectDetailId);
       if (project) return <ProjectDetail {...projectSwitcherProps} key={project.id} project={project} initialTab="overview" onBack={() => setSelectedProjectDetailId(null)} />;
     }
-    if (activeMenuItem === 'project') return <ProjectManagement {...projectSwitcherProps} onProjectsChange={setProjects} onViewApplications={project => { handleMenuChange('app-list'); setApplicationProjectName(project.name); setSearchTerm(''); setActiveTab('all'); }} />;
+    if (activeMenuItem === 'project') return <ProjectManagement {...projectSwitcherProps} onProjectsChange={setProjects} onViewProject={handleProjectChange} />;
 
     if (activeMenuItem === 'app-list') {
       return selectedApplicationName ? (
-        <ApplicationDetail {...projectSwitcherProps} key={`${selectedApplicationName}-${applicationDetailInitialTab}`} applicationName={selectedApplicationName} initialTab={applicationDetailInitialTab} onBack={() => setSelectedApplicationName(null)} onViewResource={handleMenuChange} />
+        <ApplicationDetail {...projectSwitcherProps} key={applicationDetailInitialTab} applicationName={selectedApplicationName} initialTab={applicationDetailInitialTab} onProjectChange={handleApplicationDetailProjectChange} onApplicationChange={handleApplicationDetailChange} onBack={() => setSelectedApplicationName(null)} onViewResource={handleMenuChange} />
       ) : (
         <ApplicationList
-          {...projectSwitcherProps}
+          {...listProjectSwitcherProps}
           applications={filteredApplications}
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -355,7 +392,7 @@ export default function Page() {
 
       return (
         <ClusterList
-          {...projectSwitcherProps}
+          {...listProjectSwitcherProps}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           currentPage={currentPage}
@@ -509,7 +546,7 @@ export default function Page() {
           activeMenuItem={activeMenuItem}
           onMenuItemChange={handleMenuChange}
         />
-        <div className="min-w-0 flex-1 overflow-hidden"><ProjectBreadcrumbProvider value={projectSwitcherProps}>{renderContent()}</ProjectBreadcrumbProvider></div>
+        <div className="min-w-0 flex-1 overflow-hidden"><ProjectBreadcrumbProvider value={activeMenuItem === 'project' || isResourceListPage ? listProjectSwitcherProps : projectSwitcherProps}>{renderContent()}</ProjectBreadcrumbProvider></div>
         <FloatingButtons />
       </div>
     </div>

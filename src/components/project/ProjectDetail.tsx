@@ -23,7 +23,6 @@ const detailTabs = [
 
 interface ProjectDetailProps {
   project: Project;
-  applicationName?: string;
   projects: ProjectSwitcherProject[];
   applicationsByProject: Record<number, ProjectSwitcherApplication[]>;
   onProjectChange?: (project: ProjectSwitcherProject) => void;
@@ -33,11 +32,11 @@ interface ProjectDetailProps {
   initialTab?: 'overview' | 'members';
 }
 
-export default function ProjectDetail({ project, applicationName, projects, applicationsByProject, onProjectChange, onApplicationChange, onApplicationListClick, onBack, initialTab = 'overview' }: ProjectDetailProps) {
+export default function ProjectDetail({ project, projects, applicationsByProject, onProjectChange, onApplicationChange, onApplicationListClick, onBack, initialTab = 'overview' }: ProjectDetailProps) {
   const [activeTab, setActiveTab] = useState<string>(initialTab);
   return (
     <div className="flex h-full flex-col bg-[#F0F5F7] text-sm text-[#202020]">
-      <ProjectSwitcherBreadcrumb projectName={project.name} applicationName={applicationName} projects={projects} applicationsByProject={applicationsByProject} onProjectChange={selectedProject => { setActiveTab('overview'); onProjectChange?.(selectedProject); }} onApplicationChange={onApplicationChange} onApplicationListClick={onApplicationListClick} />
+      <ProjectSwitcherBreadcrumb projectName={project.name} projects={projects} applicationsByProject={applicationsByProject} onProjectChange={selectedProject => { setActiveTab('overview'); onProjectChange?.(selectedProject); }} onApplicationChange={onApplicationChange} onApplicationListClick={onApplicationListClick} />
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 bg-white px-6 py-5">
         <div className="flex min-w-0 items-center gap-3"><button aria-label="返回项目列表" onClick={onBack} className="cursor-pointer text-[#63748A] hover:text-[#0066FF]"><ArrowLeft className="h-5 w-5" /></button><h1 className="truncate text-lg font-medium">{project.name}</h1><span className="rounded-sm bg-[#EEF6FF] px-2 py-1 text-xs text-[#0066FF]">项目</span></div>
       </div>
