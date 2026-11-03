@@ -77,6 +77,7 @@ export default function ProjectSwitcherBreadcrumb({
         <PopoverTrigger asChild><button
           type="button"
           aria-label="切换项目"
+          data-guide="context-switcher"
           className="inline-flex max-w-[220px] items-center gap-1 truncate font-medium text-[#0066FF] hover:text-[#0052CC]"
         >
           <span className="truncate">{projectName}</span>

@@ -47,7 +47,7 @@ export default function ApplicationDetail({ applicationName, initialTab = 'overv
       <div className="flex shrink-0 items-center gap-3 bg-white px-6 py-5"><button aria-label="返回应用列表" onClick={onBack} className="cursor-pointer text-[#63748A] hover:text-[#0066FF]"><ArrowLeft className="h-5 w-5" /></button><h1 className="text-lg font-medium">{appInfo.name}</h1><span className="rounded-sm bg-[#EEF6FF] px-2 py-1 text-xs text-[#0066FF]">应用</span></div>
       <Tabs defaultValue={initialTab} className="min-h-0 flex-1 gap-0">
         <div className="shrink-0 overflow-x-auto border-b border-[#E6E6E6] bg-white px-6">
-          <TabsList aria-label="应用详情" className="h-11 w-max justify-start gap-7 rounded-none bg-white p-0">
+          <TabsList data-guide="application-tabs" aria-label="应用详情" className="h-11 w-max justify-start gap-7 rounded-none bg-white p-0">
             {detailTabs.map(tab => <TabsTrigger key={tab.id} value={tab.id} className="h-11 flex-none cursor-pointer rounded-none border-0 border-b-2 border-transparent px-1 text-[#666666] data-[state=active]:border-[#0066FF] data-[state=active]:text-[#0066FF] data-[state=active]:shadow-none">{tab.label}</TabsTrigger>)}
           </TabsList>
         </div>

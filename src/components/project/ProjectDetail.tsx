@@ -42,7 +42,7 @@ export default function ProjectDetail({ project, projects, applicationsByProject
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="min-h-0 flex-1 gap-0">
         <div className="shrink-0 overflow-x-auto border-b border-[#E6E6E6] bg-white px-6">
-          <TabsList aria-label="项目详情" className="h-11 w-max justify-start gap-7 rounded-none bg-white p-0">
+          <TabsList data-guide="project-tabs" aria-label="项目详情" className="h-11 w-max justify-start gap-7 rounded-none bg-white p-0">
             {detailTabs.map(tab => <TabsTrigger key={tab.id} value={tab.id} className="h-11 flex-none cursor-pointer rounded-none border-0 border-b-2 border-transparent px-1 text-[#666666] data-[state=active]:border-[#0066FF] data-[state=active]:text-[#0066FF] data-[state=active]:shadow-none">{tab.label}</TabsTrigger>)}
           </TabsList>
         </div>

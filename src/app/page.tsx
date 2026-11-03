@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Clock3, Grid3X3, Star } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { ChevronLeft, ChevronRight, Clock3, Grid3X3, Star, X } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Sidebar from '@/components/layout/Sidebar';
 import FloatingButtons from '@/components/common/FloatingButtons';
@@ -171,6 +172,132 @@ const applications = [
   },
 ];
 
+const PRODUCT_GUIDE_STORAGE_KEY = 'container-cloud-menu-guide-v3';
+
+function ProductGuide({ onStepChange }: { onStepChange: (step: number) => void }) {
+  const [step, setStep] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  const initialized = useRef(false);
+  const [targetRect, setTargetRect] = useState<{ left: number; top: number; width: number; height: number; cardLeft: number; cardTop: number } | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (initialized.current) return;
+      initialized.current = true;
+      try {
+        if (window.localStorage.getItem(PRODUCT_GUIDE_STORAGE_KEY) !== 'dismissed') {
+          onStepChange(0);
+          setVisible(true);
+        }
+      } catch {
+        onStepChange(0);
+        setVisible(true);
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [onStepChange]);
+
+  useLayoutEffect(() => {
+    if (!visible) return;
+    const update = () => {
+      const target = document.querySelector(`[data-guide="${['context-switcher', 'project-tabs', 'application-tabs'][step]}"]`);
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      setTargetRect({ left: rect.left - 6, top: rect.top - 6, width: rect.width + 12, height: rect.height + 12,
+        cardLeft: Math.max(16, Math.min(rect.left, window.innerWidth - 496)), cardTop: rect.bottom + 22 });
+    };
+    const frame = requestAnimationFrame(update);
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
+  }, [step, visible]);
+
+  const changeStep = (next: number) => {
+    setTargetRect(null);
+    onStepChange(next);
+    setStep(next);
+  };
+
+  const updateDontShowAgain = (checked: boolean) => {
+    setDontShowAgain(checked);
+    try {
+      if (checked) {
+        window.localStorage.setItem(PRODUCT_GUIDE_STORAGE_KEY, 'dismissed');
+      } else {
+        window.localStorage.removeItem(PRODUCT_GUIDE_STORAGE_KEY);
+      }
+    } catch {
+      // Keep the guide usable when browser storage is unavailable.
+    }
+  };
+
+  const close = () => setVisible(false);
+
+  if (!visible) return null;
+
+  const steps = [
+    {
+      label: '01',
+      title: '切换项目和应用的入口已迁移',
+      description: '项目和应用切换入口已统一移动到页面顶部面包屑。点击项目名称即可打开切换弹窗，选择项目或应用。',
+      location: '页面顶部：当前项目 > 项目名称',
+    },
+    {
+      label: '02',
+      title: '项目级成员、APIkeys、设置等已集中到项目详情',
+      description: '这里是项目详情页。成员管理、APIkeys、资源统计、上线记录和项目设置已移到上方高亮的标签栏中。',
+      location: '项目管理 > 项目名称 > 项目详情 TAB',
+    },
+    {
+      label: '03',
+      title: '应用级成员、APIkeys、配置功能已集中到应用详情',
+      description: '这里是应用详情页。成员管理、APIkeys和应用配置已移到上方高亮的标签栏中，点击对应标签即可使用。',
+      location: '应用列表 > 应用名称 > 应用详情 TAB',
+    },
+  ];
+  const current = steps[step];
+
+  return (
+    <Dialog.Root open={visible} onOpenChange={open => { if (!open) close(); }}>
+      <Dialog.Portal>
+      <Dialog.Overlay className={`fixed inset-0 z-[3000] ${targetRect ? 'bg-transparent' : 'bg-[#0F172A]/45'}`} />
+      {targetRect && <div aria-hidden="true" className="pointer-events-none fixed z-[3001] rounded border-2 border-[#0066FF] shadow-[0_0_0_9999px_rgba(15,23,42,0.45)]" style={{ left: targetRect.left, top: targetRect.top, width: targetRect.width, height: targetRect.height }} />}
+      <Dialog.Content onPointerDownOutside={event => event.preventDefault()} style={targetRect ? { left: targetRect.cardLeft, top: targetRect.cardTop, maxHeight: `calc(100dvh - ${targetRect.cardTop + 16}px)` } : undefined} className={`fixed z-[3002] w-[calc(100%-32px)] max-w-[480px] overflow-y-auto rounded-lg bg-white shadow-[0_16px_48px_rgba(15,23,42,0.2)] outline-none ${targetRect ? '' : 'left-1/2 top-1/2 max-h-[calc(100dvh-32px)] -translate-x-1/2 -translate-y-1/2'}`}>
+        <div className="flex items-center justify-between border-b border-[#E6E6E6] px-6 py-3">
+          <div>
+            <p className="mb-1 text-xs font-medium tracking-[0.12em] text-[#0066FF]">功能导航更新</p>
+            <Dialog.Title className="text-lg font-medium text-[#202020]">切换项目与菜单调整说明</Dialog.Title>
+          </div>
+          <button type="button" aria-label="关闭引导" onClick={close} className="rounded p-1 text-[#8C9AAE] hover:bg-[#F5F7FA] hover:text-[#202020]"><X className="h-5 w-5" /></button>
+        </div>
+        <div className="px-6 py-3">
+          <div className="mb-3 flex items-center gap-2" aria-label={`第 ${step + 1} 步，共 3 步`}>
+            {steps.map((item, index) => <div key={item.label} className={`flex items-center gap-2 ${index < steps.length - 1 ? 'flex-1' : ''}`}><span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium ${index === step ? 'bg-[#0066FF] text-white' : index < step ? 'bg-[#E8F1FF] text-[#0066FF]' : 'bg-[#F2F4F7] text-[#8C9AAE]'}`}>{item.label}</span>{index < steps.length - 1 && <span className={`h-px w-full ${index < step ? 'bg-[#8DBBFF]' : 'bg-[#E6EAF0]'}`} />}</div>)}
+          </div>
+          <div aria-live="polite" className="rounded-md border border-[#D8E8FF] bg-[#F5F9FF] p-4">
+            <h3 className="mb-2 text-base font-semibold text-[#202020]">{current.title}</h3>
+            <Dialog.Description className="mb-3 text-sm leading-6 text-[#4B5563]">{current.description}</Dialog.Description>
+            <div className="rounded bg-white px-3 py-2 text-xs text-[#0066FF]">位置：{current.location}</div>
+          </div>
+          <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-sm text-[#63748A]">
+            <input type="checkbox" checked={dontShowAgain} onChange={event => updateDontShowAgain(event.target.checked)} className="h-4 w-4 cursor-pointer accent-[#0066FF]" />
+            下次不再显示
+          </label>
+        </div>
+        <div className="flex items-center justify-between border-t border-[#E6E6E6] px-6 py-3">
+          <button type="button" onClick={close} className="text-sm text-[#63748A] hover:text-[#202020]">跳过引导</button>
+          <div className="flex items-center gap-3">
+            {step > 0 && <button type="button" onClick={() => changeStep(step - 1)} className="inline-flex h-9 items-center gap-1 rounded border border-[#D8E0E8] px-3 text-sm text-[#4B5563] hover:border-[#8DBBFF] hover:text-[#0066FF]"><ChevronLeft className="h-4 w-4" />上一步</button>}
+            {step < steps.length - 1 ? <button type="button" onClick={() => changeStep(step + 1)} className="inline-flex h-9 items-center gap-1 rounded bg-[#0066FF] px-4 text-sm text-white hover:bg-[#0052CC]">下一步<ChevronRight className="h-4 w-4" /></button> : <button type="button" onClick={close} className="h-9 rounded bg-[#0066FF] px-4 text-sm text-white hover:bg-[#0052CC]">开始使用</button>}
+          </div>
+        </div>
+      </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 const appContextMenuItems = new Set([
   'workload',
   'deployment',
@@ -318,6 +445,21 @@ export default function Page() {
     setCurrentApplicationName(application.name);
     setSelectedApplicationName(application.name);
   };
+
+  const handleGuideStepChange = useCallback((step: number) => {
+    const project = projects.find(item => item.name === currentProjectName) ?? projects[0];
+    setActiveMenuItem(step === 2 ? 'app-list' : 'project');
+    setSelectedProjectDetailId(step === 1 ? project?.id ?? null : null);
+    setSelectedApplicationName(step === 2 ? breadcrumbApplicationName : null);
+    setApplicationDetailInitialTab('overview');
+    setSelectedClusterName(null);
+    setSelectedDeploymentName(null);
+    setShowCreateCluster(false);
+    setShowCreateDeployment(false);
+    setShowCreateService(false);
+    setShowCreateIngress(false);
+    setShowCreateLoadBalancer(false);
+  }, [projects, currentProjectName, breadcrumbApplicationName]);
 
   const projectSwitcherProps = {
     projectName: currentProjectName,
@@ -548,6 +690,7 @@ export default function Page() {
         />
         <div className="min-w-0 flex-1 overflow-hidden"><ProjectBreadcrumbProvider value={activeMenuItem === 'project' || isResourceListPage ? listProjectSwitcherProps : projectSwitcherProps}>{renderContent()}</ProjectBreadcrumbProvider></div>
         <FloatingButtons />
+        <ProductGuide onStepChange={handleGuideStepChange} />
       </div>
     </div>
   );
